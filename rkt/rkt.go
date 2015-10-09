@@ -34,6 +34,14 @@ const (
 	cliDescription = "rkt, the application container runner"
 
 	defaultDataDir = "/var/lib/rkt"
+
+	insecureNone  = 0
+	insecureImage = 1 << iota
+	insecureTls
+	insecureFingerprint
+	insecureAll = (insecureImage | insecureTls | insecureFingerprint)
+
+	insecureOptionsList = "none,image,tls,fingerprint"
 )
 
 var (
@@ -44,12 +52,46 @@ var (
 		LocalConfigDir     string
 		Debug              bool
 		Help               bool
-		InsecureSkipVerify bool
+		InsecureOptions    int
 		TrustKeysFromHttps bool
 	}{}
 
 	cmdExitCode int
 )
+
+// TODO: MAKE THIS AN INT AND OR THE FLAGS
+type InsecureOptions []string
+
+func (o *InsecureOptions) Set(s string) error {
+	*o = []string{}
+	options := strings.Split(strings.ToLower(s), ",")
+	seen := map[string]struct{}{}
+	for _, option := range options {
+		// accept any case
+		if ok := insecureOptionsList.Contains(option); !ok {
+			return fmt.Errorf("unknown option %q", f)
+		}
+		if _, ok := seen[option]; ok {
+			return fmt.Errorf("duplicated option %q", f)
+		}
+		*o = append(*o, option)
+		seen[option] = struct{}{}
+	}
+
+	return nil
+}
+
+func (o *InsecureOptions) String() string {
+	return strings.Join(*o, ",")
+}
+
+func (*InsecureOptions) Type() string {
+	return "InsecureOptions"
+}
+
+func (o *InsecureOptions) verifyImage() bool {
+	return
+}
 
 var cmdRkt = &cobra.Command{
 	Use:   "rkt [command]",
@@ -61,7 +103,7 @@ func init() {
 	cmdRkt.PersistentFlags().StringVar(&globalFlags.Dir, "dir", defaultDataDir, "rkt data directory")
 	cmdRkt.PersistentFlags().StringVar(&globalFlags.SystemConfigDir, "system-config", common.DefaultSystemConfigDir, "system configuration directory")
 	cmdRkt.PersistentFlags().StringVar(&globalFlags.LocalConfigDir, "local-config", common.DefaultLocalConfigDir, "local configuration directory")
-	cmdRkt.PersistentFlags().BoolVar(&globalFlags.InsecureSkipVerify, "insecure-skip-verify", false, "skip all TLS, image or fingerprint verification")
+	cmdRkt.PersistentFlags().BoolVar(&globalFlags.InsecureOptions, "insecure-options", "none", `disable various security options. Accepted options are "none", "image", "tls", "fingerprint"`)
 	cmdRkt.PersistentFlags().BoolVar(&globalFlags.TrustKeysFromHttps, "trust-keys-from-https", true, "automatically trust gpg keys fetched from https")
 }
 
