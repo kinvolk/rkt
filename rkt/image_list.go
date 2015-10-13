@@ -37,13 +37,7 @@ const (
 )
 
 var (
-	// map of valid fields and related flag value
-	imagesAllFields = map[string]struct{}{
-		idField:         struct{}{},
-		nameField:       struct{}{},
-		importTimeField: struct{}{},
-		latestField:     struct{}{},
-	}
+	flagImagesFields OptionsList
 
 	// map of valid fields and related header name
 	ImagesFieldHeaderMap = map[string]string{
@@ -67,37 +61,6 @@ var (
 		importTimeField: struct{}{},
 	}
 )
-
-type ImagesFields []string
-
-func (ifs *ImagesFields) Set(s string) error {
-	*ifs = []string{}
-	fields := strings.Split(s, ",")
-	seen := map[string]struct{}{}
-	for _, f := range fields {
-		// accept any case
-		f = strings.ToLower(f)
-		_, ok := imagesAllFields[f]
-		if !ok {
-			return fmt.Errorf("unknown field %q", f)
-		}
-		if _, ok := seen[f]; ok {
-			return fmt.Errorf("duplicated field %q", f)
-		}
-		*ifs = append(*ifs, f)
-		seen[f] = struct{}{}
-	}
-
-	return nil
-}
-
-func (ifs *ImagesFields) String() string {
-	return strings.Join(*ifs, ",")
-}
-
-func (ifs *ImagesFields) Type() string {
-	return "imagesFields"
-}
 
 type ImagesSortFields []string
 
@@ -161,14 +124,14 @@ var (
 		Short: "List images in the local store",
 		Run:   runWrapper(runImages),
 	}
-	flagImagesFields     ImagesFields
+	flagImagesFields     OptionList
 	flagImagesSortFields ImagesSortFields
 	flagImagesSortAsc    ImagesSortAsc
 )
 
 func init() {
 	// Set defaults
-	flagImagesFields = []string{idField, nameField, importTimeField, latestField}
+	flagImagesFields := NewOptionList{[]string{idField, nameField, importTimeField, latestField}}
 	flagImagesSortFields = []string{importTimeField}
 	flagImagesSortAsc = true
 

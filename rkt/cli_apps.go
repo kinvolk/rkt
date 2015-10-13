@@ -162,4 +162,33 @@ func (ae *appExec) Type() string {
 	return "appExec"
 }
 
+// An flag value type supporting a csv list of options
+type OptionList []string
+
+func (ol *OptionList) Set(s string) error {
+	*ol = []string{}
+	fields := strings.Split(strings.ToLower(s), ",")
+	seen := map[string]struct{}{}
+	for _, f := range fields {
+		if _, ok := imagesAllFields[f]; !ok {
+			return fmt.Errorf("unknown option %q", f)
+		}
+		if _, ok := seen[f]; ok {
+			return fmt.Errorf("duplicated option %q", f)
+		}
+		*ol = append(*ol, f)
+		seen[f] = struct{}{}
+	}
+
+	return nil
+}
+
+func (ol *OptionsList) String() string {
+	return strings.Join(*ol, ",")
+}
+
+func (ol *OptionsList) Type() string {
+	return "OptionsList"
+}
+
 // TODO(vc): --mount, --set-env, etc.
