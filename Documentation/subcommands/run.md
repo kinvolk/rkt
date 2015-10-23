@@ -5,23 +5,23 @@
 Images can be run by either their name, their hash, an explicit transport address, or a Docker registry URL.
 rkt will automatically [fetch](fetch.md) them if they're not present in the local store.
 
+##### Run by name
 ```
-# Run by name
 # rkt run coreos.com/etcd:v2.0.0
 ```
 
+##### Run by hash
 ```
-# Run by hash
 # rkt run sha512-fa1cb92dc276b0f9bedf87981e61ecde
 ```
 
+##### Run by ACI address
 ```
-# Run by ACI address
 # rkt run https://github.com/coreos/etcd/releases/download/v2.0.0/etcd-v2.0.0-linux-amd64.aci
 ```
 
+##### Run from a Docker registry
 ```
-# Run by Docker registry
 # rkt --insecure-skip-verify run docker://quay.io/coreos/etcd:v2.0.0
 ```
 
