@@ -210,11 +210,6 @@ func patchImportAndFetchHash(image string, patches []string, t *testing.T, ctx *
 	return importImageAndFetchHash(t, ctx, imagePath)
 }
 
-func runGC(t *testing.T, ctx *testutils.RktRunCtx) {
-	cmd := fmt.Sprintf("%s gc --grace-period=0s", ctx.Cmd())
-	spawnAndWaitOrFail(t, cmd, true)
-}
-
 func runImageGC(t *testing.T, ctx *testutils.RktRunCtx) {
 	cmd := fmt.Sprintf("%s image gc", ctx.Cmd())
 	spawnAndWaitOrFail(t, cmd, true)

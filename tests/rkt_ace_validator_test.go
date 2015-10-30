@@ -30,7 +30,7 @@ var expectedResults = []string{
 }
 
 func TestAceValidator(t *testing.T) {
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	if err := ctx.LaunchMDS(); err != nil {

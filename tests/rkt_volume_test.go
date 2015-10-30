@@ -92,7 +92,7 @@ func TestVolumes(t *testing.T) {
 	defer os.Remove(volAddMountRwImage)
 	volAddMountRoImage := patchTestACI("rkt-inspect-vol-add-mount-ro.aci", "--exec=/inspect --write-file --read-file")
 	defer os.Remove(volAddMountRoImage)
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	tmpdir := createTempDirOrPanic("rkt-tests.")

@@ -73,7 +73,7 @@ func TestEnv(t *testing.T) {
 	defer os.Remove(printVarOtherImage)
 	sleepImage := patchTestACI("rkt-inspect-sleep.aci", "--exec=/inspect --read-stdin")
 	defer os.Remove(sleepImage)
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	replacePlaceholders := func(cmd string) string {

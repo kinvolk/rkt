@@ -38,7 +38,7 @@ func TestNetHost(t *testing.T) {
 	testImage := patchTestACI("rkt-inspect-networking.aci", testImageArgs...)
 	defer os.Remove(testImage)
 
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	cmd := fmt.Sprintf("%s --net=host --debug --insecure-skip-verify run --mds-register=false %s", ctx.Cmd(), testImage)
@@ -82,7 +82,7 @@ func TestNetHostConnectivity(t *testing.T) {
 	testImage := patchTestACI("rkt-inspect-networking.aci", testImageArgs...)
 	defer os.Remove(testImage)
 
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	cmd := fmt.Sprintf("%s --net=host --debug --insecure-skip-verify run --mds-register=false %s", ctx.Cmd(), testImage)
@@ -126,7 +126,7 @@ func TestNetNone(t *testing.T) {
 	testImage := patchTestACI("rkt-inspect-networking.aci", testImageArgs...)
 	defer os.Remove(testImage)
 
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	cmd := fmt.Sprintf("%s --debug --insecure-skip-verify run --net=none --mds-register=false %s", ctx.Cmd(), testImage)
@@ -172,7 +172,7 @@ func TestNetDefaultNetNS(t *testing.T) {
 	testImage := patchTestACI("rkt-inspect-networking.aci", testImageArgs...)
 	defer os.Remove(testImage)
 
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	f := func(argument string) {
@@ -209,7 +209,7 @@ func TestNetDefaultNetNS(t *testing.T) {
  * TODO: test connection to host on an outside interface
  */
 func TestNetDefaultConnectivity(t *testing.T) {
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	f := func(argument string) {
@@ -284,7 +284,7 @@ func TestNetDefaultConnectivity(t *testing.T) {
  * TODO: verify that the container isn't NATed
  */
 func TestNetDefaultRestrictedConnectivity(t *testing.T) {
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	f := func(argument string) {
@@ -397,7 +397,7 @@ func TestNetTemplates(t *testing.T) {
 }
 
 func prepareTestNet(t *testing.T, ctx *testutils.RktRunCtx, nt networkTemplateT) (netdir string) {
-	configdir := ctx.LocalDir()
+	configdir := ctx.LocalDir().Path()
 	netdir = filepath.Join(configdir, "net.d")
 	err := os.MkdirAll(netdir, 0644)
 	if err != nil {
@@ -423,7 +423,7 @@ func testNetCustomDual(t *testing.T, nt networkTemplateT) {
 		t.Fatalf("%v", err)
 	}
 
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	netdir := prepareTestNet(t, ctx, nt)
@@ -496,7 +496,7 @@ func testNetCustomDual(t *testing.T, nt networkTemplateT) {
  * TODO: test connection to host on an outside interface
  */
 func testNetCustomNatConnectivity(t *testing.T, nt networkTemplateT) {
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	netdir := prepareTestNet(t, ctx, nt)
@@ -623,7 +623,7 @@ func TestNetCustomBridge(t *testing.T) {
 }
 
 func TestNetOverride(t *testing.T) {
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	iface, _, err := testutils.GetNonLoIfaceWithAddrs(netlink.FAMILY_V4)

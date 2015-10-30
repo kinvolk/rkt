@@ -27,7 +27,7 @@ import (
 )
 
 func TestImageGCTreeStore(t *testing.T) {
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	expectedTreeStores := 2
@@ -68,7 +68,7 @@ func TestImageGCTreeStore(t *testing.T) {
 		t.Fatalf("expected %d entries in the treestore but found %d entries", expectedTreeStores, len(treeStoreIDs))
 	}
 
-	runGC(t, ctx)
+	ctx.RunGC()
 	runImageGC(t, ctx)
 
 	treeStoreIDs, err = getTreeStoreIDs(ctx)
@@ -82,7 +82,7 @@ func TestImageGCTreeStore(t *testing.T) {
 
 func getTreeStoreIDs(ctx *testutils.RktRunCtx) (map[string]struct{}, error) {
 	treeStoreIDs := map[string]struct{}{}
-	ls, err := ioutil.ReadDir(filepath.Join(ctx.DataDir(), "cas", "tree"))
+	ls, err := ioutil.ReadDir(filepath.Join(ctx.DataDir().Path(), "cas", "tree"))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return treeStoreIDs, nil

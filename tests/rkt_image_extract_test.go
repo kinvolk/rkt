@@ -36,7 +36,7 @@ func TestImageExtract(t *testing.T) {
 	tmpDir := createTempDirOrPanic("rkt-TestImageRender-")
 	defer os.RemoveAll(tmpDir)
 
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	testImageShortHash := importImageAndFetchHash(t, ctx, testImage)

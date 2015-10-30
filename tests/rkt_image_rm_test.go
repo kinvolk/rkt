@@ -41,7 +41,7 @@ const (
 func TestImageRunRm(t *testing.T) {
 	imageFile := patchTestACI(unreferencedACI, fmt.Sprintf("--name=%s", unreferencedApp))
 	defer os.Remove(imageFile)
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	cmd := fmt.Sprintf("%s --insecure-skip-verify fetch %s", ctx.Cmd(), imageFile)
@@ -91,7 +91,7 @@ func TestImageRunRm(t *testing.T) {
 func TestImagePrepareRmRun(t *testing.T) {
 	imageFile := patchTestACI(unreferencedACI, fmt.Sprintf("--name=%s", unreferencedApp))
 	defer os.Remove(imageFile)
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	cmd := fmt.Sprintf("%s --insecure-skip-verify fetch %s", ctx.Cmd(), imageFile)

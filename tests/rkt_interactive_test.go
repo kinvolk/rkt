@@ -76,7 +76,7 @@ var interactiveTests = []struct {
 }
 
 func TestInteractive(t *testing.T) {
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	for i, tt := range interactiveTests {

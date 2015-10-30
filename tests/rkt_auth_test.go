@@ -27,7 +27,7 @@ import (
 )
 
 func TestAuthSanity(t *testing.T) {
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 	server := runServer(t, taas.None)
 	defer server.Close()
@@ -74,16 +74,16 @@ func TestAuthOauth(t *testing.T) {
 func testAuthGeneric(t *testing.T, auth taas.Type, tests []genericAuthTest) {
 	server := runServer(t, auth)
 	defer server.Close()
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 	for _, tt := range tests {
 		switch tt.confDir {
 		case authConfDirNone:
 			// no config to write
 		case authConfDirLocal:
-			writeConfig(t, ctx.LocalDir(), "test.json", server.Conf)
+			writeConfig(t, ctx.LocalDir().Path(), "test.json", server.Conf)
 		case authConfDirSystem:
-			writeConfig(t, ctx.SystemDir(), "test.json", server.Conf)
+			writeConfig(t, ctx.SystemDir().Path(), "test.json", server.Conf)
 		default:
 			panic("Wrong config directory")
 		}
@@ -93,7 +93,7 @@ func testAuthGeneric(t *testing.T, auth taas.Type, tests []genericAuthTest) {
 }
 
 func TestAuthOverride(t *testing.T) {
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 	server := runServer(t, taas.Oauth)
 	defer server.Close()
@@ -108,9 +108,9 @@ func TestAuthOverride(t *testing.T) {
 		{getInvalidOAuthConfig(server.Conf), server.Conf, "invalid-system-valid-local", authFailedDownload, authSuccessfulDownload},
 	}
 	for _, tt := range tests {
-		writeConfig(t, ctx.SystemDir(), "test.json", tt.systemConfig)
+		writeConfig(t, ctx.SystemDir().Path(), "test.json", tt.systemConfig)
 		expectedRunRkt(ctx, t, server.URL, tt.name+"-1", tt.resultBeforeOverride)
-		writeConfig(t, ctx.LocalDir(), "test.json", tt.localConfig)
+		writeConfig(t, ctx.LocalDir().Path(), "test.json", tt.localConfig)
 		expectedRunRkt(ctx, t, server.URL, tt.name+"-2", tt.resultAfterOverride)
 		ctx.Reset()
 	}
@@ -124,20 +124,20 @@ func TestAuthIgnore(t *testing.T) {
 }
 
 func testAuthIgnoreBogusFiles(t *testing.T, server *taas.Server) {
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
-	writeConfig(t, ctx.SystemDir(), "README", "This is system config")
-	writeConfig(t, ctx.LocalDir(), "README", "This is local config")
-	writeConfig(t, ctx.SystemDir(), "test.notjson", server.Conf)
-	writeConfig(t, ctx.LocalDir(), "test.notjson", server.Conf)
+	writeConfig(t, ctx.SystemDir().Path(), "README", "This is system config")
+	writeConfig(t, ctx.LocalDir().Path(), "README", "This is local config")
+	writeConfig(t, ctx.SystemDir().Path(), "test.notjson", server.Conf)
+	writeConfig(t, ctx.LocalDir().Path(), "test.notjson", server.Conf)
 	expectedRunRkt(ctx, t, server.URL, "oauth-bogus-files", authFailedDownload)
 }
 
 func testAuthIgnoreSubdirectories(t *testing.T, server *taas.Server) {
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
-	localSubdir := filepath.Join(ctx.LocalDir(), "subdir")
-	systemSubdir := filepath.Join(ctx.SystemDir(), "subdir")
+	localSubdir := filepath.Join(ctx.LocalDir().Path(), "subdir")
+	systemSubdir := filepath.Join(ctx.SystemDir().Path(), "subdir")
 	writeConfig(t, localSubdir, "test.json", server.Conf)
 	writeConfig(t, systemSubdir, "test.json", server.Conf)
 	expectedRunRkt(ctx, t, server.URL, "oauth-subdirectories", authFailedDownload)

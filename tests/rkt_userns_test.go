@@ -51,7 +51,7 @@ var usernsTests = []struct {
 func TestUserns(t *testing.T) {
 	image := patchTestACI("rkt-inspect-stat.aci", "--exec=/inspect --stat-file")
 	defer os.Remove(image)
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	for i, tt := range usernsTests {

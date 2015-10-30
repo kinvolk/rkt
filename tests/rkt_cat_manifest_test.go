@@ -50,7 +50,7 @@ func TestCatManifest(t *testing.T) {
 
 	testImage := patchTestACI("rkt-inspect-image-cat-manifest.aci", "--manifest", tmpManifest.Name())
 	defer os.Remove(testImage)
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	testImageHash := importImageAndFetchHash(t, ctx, testImage)

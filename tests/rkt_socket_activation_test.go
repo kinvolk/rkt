@@ -67,7 +67,7 @@ func TestSocketActivation(t *testing.T) {
 		fmt.Sprintf("--ports=%d-tcp,protocol=tcp,port=%d,socketActivated=true", port, port))
 	defer os.Remove(echoImage)
 
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	conn, err := sd_dbus.New()

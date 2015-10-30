@@ -141,7 +141,7 @@ func getMissingOrInvalidTests(t *testing.T, ctx *testutils.RktRunCtx) []osArchTe
 // TestMissingOrInvalidOSArchRun tests that rkt errors out when it tries to run
 // an image (not present in the store) with a missing or unsupported os/arch
 func TestMissingOrInvalidOSArchRun(t *testing.T) {
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 	tests := getMissingOrInvalidTests(t, ctx)
 	defer osArchTestRemoveImages(tests)
@@ -149,13 +149,14 @@ func TestMissingOrInvalidOSArchRun(t *testing.T) {
 	for i, tt := range tests {
 		t.Logf("Running test #%v: %v", i, tt.rktCmd)
 		runRktAndCheckOutput(t, tt.rktCmd, tt.expectedLine, tt.expectError)
+		// TODO(krnowak): ctx.Reset()?
 	}
 }
 
 // TestMissingOrInvalidOSArchFetchRun tests that rkt errors out when it tries
 // to run an already fetched image with a missing or unsupported os/arch
 func TestMissingOrInvalidOSArchFetchRun(t *testing.T) {
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 	tests := getMissingOrInvalidTests(t, ctx)
 	defer osArchTestRemoveImages(tests)
@@ -165,5 +166,6 @@ func TestMissingOrInvalidOSArchFetchRun(t *testing.T) {
 		rktCmd := fmt.Sprintf("%s run --mds-register=false %s", ctx.Cmd(), imgHash)
 		t.Logf("Running test #%v: %v", i, rktCmd)
 		runRktAndCheckOutput(t, rktCmd, tt.expectedLine, tt.expectError)
+		// TODO(krnowak): ctx.Reset()?
 	}
 }

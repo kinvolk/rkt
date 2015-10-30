@@ -74,7 +74,7 @@ var capsTests = []struct {
 }
 
 func TestCaps(t *testing.T) {
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	for i, tt := range capsTests {
@@ -116,7 +116,7 @@ func TestCaps(t *testing.T) {
 }
 
 func TestCapsNonRoot(t *testing.T) {
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	for i, tt := range capsTests {

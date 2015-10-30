@@ -44,7 +44,7 @@ func preparePidFileRace(t *testing.T, ctx *testutils.RktRunCtx, sleepImage strin
 	}
 	UUID := strings.Split(string(output), "\t")[0]
 
-	pidFileName := filepath.Join(ctx.DataDir(), "pods/run", UUID, "ppid")
+	pidFileName := filepath.Join(ctx.DataDir().Path(), "pods/run", UUID, "ppid")
 	if _, err := os.Stat(pidFileName); err != nil {
 		t.Fatalf("Pid file missing: %v", err)
 	}
@@ -71,7 +71,7 @@ func TestPidFileDelayedStart(t *testing.T) {
 	sleepImage := patchTestACI("rkt-inspect-sleep.aci", "--exec=/inspect --read-stdin")
 	defer os.Remove(sleepImage)
 
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	runChild, enterChild, pidFileName, pidFileNameBackup := preparePidFileRace(t, ctx, sleepImage)
@@ -106,7 +106,7 @@ func TestPidFileAbortedStart(t *testing.T) {
 	sleepImage := patchTestACI("rkt-inspect-sleep.aci", "--exec=/inspect --read-stdin")
 	defer os.Remove(sleepImage)
 
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	runChild, enterChild, _, _ := preparePidFileRace(t, ctx, sleepImage)

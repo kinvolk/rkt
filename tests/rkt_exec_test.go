@@ -37,7 +37,7 @@ func TestRunOverrideExec(t *testing.T) {
 	defer os.Remove(noappImage)
 	execImage := patchTestACI("rkt-exec-override.aci", "--exec=/inspect")
 	defer os.Remove(execImage)
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	for _, tt := range []struct {
@@ -67,7 +67,7 @@ func TestRunOverrideExec(t *testing.T) {
 func TestRunPreparedOverrideExec(t *testing.T) {
 	execImage := patchTestACI("rkt-exec-override.aci", "--exec=/inspect")
 	defer os.Remove(execImage)
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	var rktCmd, uuid, expected string

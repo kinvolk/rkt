@@ -54,7 +54,7 @@ func TestFetchFromFile(t *testing.T) {
 func testFetchFromFile(t *testing.T, arg string, image string) {
 	fetchFromFileMsg := fmt.Sprintf("using image from file %s", image)
 
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	cmd := fmt.Sprintf("%s %s %s", ctx.Cmd(), arg, image)
@@ -114,7 +114,7 @@ func testFetchDefault(t *testing.T, arg string, image string, finalURL string) {
 	remoteFetchMsg := fmt.Sprintf(remoteFetchMsgTpl, finalURL)
 	storeMsg := fmt.Sprintf(storeMsgTpl, image)
 
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	cmd := fmt.Sprintf("%s %s %s", ctx.Cmd(), arg, image)
@@ -136,7 +136,7 @@ func testFetchStoreOnly(t *testing.T, args string, image string, finalURL string
 	cannotFetchMsg := fmt.Sprintf(cannotFetchMsgTpl, image)
 	storeMsg := fmt.Sprintf(storeMsgTpl, image)
 
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	cmd := fmt.Sprintf("%s --store-only %s %s", ctx.Cmd(), args, image)
@@ -154,7 +154,7 @@ func testFetchNoStore(t *testing.T, args string, image string, finalURL string) 
 	remoteFetchMsgTpl := `remote fetching from url %s`
 	remoteFetchMsg := fmt.Sprintf(remoteFetchMsgTpl, finalURL)
 
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	importImageAndFetchHash(t, ctx, image)

@@ -79,7 +79,7 @@ func TestShortHash(t *testing.T) {
 		imageIds = append(imageIds, imageId)
 		iter++
 	}
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	// Pull the 2 images with matching first 2 hash chars into cas

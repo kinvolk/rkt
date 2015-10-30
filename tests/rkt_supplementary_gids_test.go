@@ -23,7 +23,7 @@ import (
 )
 
 func TestSupplementaryGIDs(t *testing.T) {
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	printSupplGroups := patchTestACI("rkt-inspect-print-supplementary-groups.aci",

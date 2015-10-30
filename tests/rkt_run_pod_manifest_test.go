@@ -27,9 +27,9 @@ import (
 	"github.com/coreos/rkt/Godeps/_workspace/src/github.com/appc/spec/schema"
 	"github.com/coreos/rkt/Godeps/_workspace/src/github.com/appc/spec/schema/types"
 	"github.com/coreos/rkt/Godeps/_workspace/src/github.com/syndtr/gocapability/capability"
-	"github.com/coreos/rkt/tests/testutils"
 
 	"github.com/coreos/rkt/common/cgroup"
+	"github.com/coreos/rkt/tests/testutils"
 )
 
 const baseAppName = "rkt-inspect"
@@ -90,7 +90,7 @@ type imagePatch struct {
 // Test running pod manifests that contains just one app.
 // TODO(yifan): Figure out a way to test port mapping on single host.
 func TestPodManifest(t *testing.T) {
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	tmpdir := createTempDirOrPanic("rkt-tests.")
@@ -554,9 +554,10 @@ func TestPodManifest(t *testing.T) {
 
 		// we run the garbage collector and remove the imported images to save
 		// space
-		runGC(t, ctx)
+		ctx.RunGC()
 		for _, h := range hashesToRemove {
 			removeFromCas(t, ctx, h)
 		}
+		// TODO(krnowak): ctx.Reset()?
 	}
 }

@@ -60,7 +60,7 @@ func TestAppIsolatorMemory(t *testing.T) {
 		t.Skip("Memory isolator not supported.")
 	}
 
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	t.Logf("Running test: %v", memoryTest.testName)
@@ -79,7 +79,7 @@ func TestAppIsolatorCPU(t *testing.T) {
 		t.Skip("CPU isolator not supported.")
 	}
 
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	t.Logf("Running test: %v", cpuTest.testName)
@@ -93,7 +93,7 @@ func TestAppIsolatorCPU(t *testing.T) {
 }
 
 func TestCgroups(t *testing.T) {
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	t.Logf("Running test: %v", cgroupsTest.testName)

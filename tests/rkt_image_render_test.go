@@ -58,7 +58,7 @@ func TestImageRender(t *testing.T) {
 
 	testImage := patchACI(emptyImage, "rkt-inspect-image-render.aci", "--manifest", tmpManifest.Name())
 	defer os.Remove(testImage)
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	_ = importImageAndFetchHash(t, ctx, baseImage)

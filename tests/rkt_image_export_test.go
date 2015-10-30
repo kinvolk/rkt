@@ -52,7 +52,7 @@ func TestImageExport(t *testing.T) {
 
 	testImage := patchTestACI("rkt-inspect-image-export.aci", "--manifest", tmpManifestName)
 	defer os.Remove(testImage)
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	testImageId := importImageAndFetchHash(t, ctx, testImage)

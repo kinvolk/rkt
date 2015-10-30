@@ -85,7 +85,7 @@ func TestTrust(t *testing.T) {
 	imageFile2 := patchTestACI("rkt-inspect-trust2.aci", "--exec=/inspect --print-msg=Hello", "--name=rkt-alternative.com/my-app")
 	defer os.Remove(imageFile2)
 
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	t.Logf("Run the non-signed image: it should fail\n")

@@ -32,7 +32,7 @@ func TestServiceFile(t *testing.T) {
 		t.Skip("Systemd is not running on the host.")
 	}
 
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))

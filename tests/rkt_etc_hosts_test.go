@@ -47,7 +47,7 @@ func TestPrepareAppEnsureEtcHosts(t *testing.T) {
 	defer os.Remove(etcHostsCreateImage)
 	etcHostsExistsImage := patchTestACI("rkt-inspect-etc-hosts-exists.aci", "--exec=/inspect --read-file", "--mounts=etc,path=/etc,readOnly=false")
 	defer os.Remove(etcHostsExistsImage)
-	ctx := testutils.NewRktRunCtx()
+	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
 
 	tmpdir := createTempDirOrPanic("rkt-tests.")
