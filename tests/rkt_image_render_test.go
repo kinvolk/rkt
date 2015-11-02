@@ -94,8 +94,12 @@ func TestImageRender(t *testing.T) {
 	for i, tt := range tests {
 		outputPath := filepath.Join(tmpDir, fmt.Sprintf("rendered-%d", i))
 		runCmd := fmt.Sprintf("%s image render --rootfs-only %s %s", ctx.Cmd(), tt.image, outputPath)
+		result := WaitFailure
+		if tt.shouldFind {
+			result = WaitSuccess
+		}
 		t.Logf("Running 'image render' test #%v: %v", i, runCmd)
-		spawnAndWaitOrFail(t, runCmd, tt.shouldFind)
+		spawnAndWaitOrFail(t, runCmd, result)
 
 		if !tt.shouldFind {
 			continue

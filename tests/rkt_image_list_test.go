@@ -86,7 +86,7 @@ func TestShortHash(t *testing.T) {
 	for _, imageId := range imageIds {
 		cmd := fmt.Sprintf("%s --insecure-skip-verify fetch %s", ctx.Cmd(), imageId.path)
 		t.Logf("Fetching %s: %v", imageId.path, cmd)
-		spawnAndWaitOrFail(t, cmd, true)
+		spawnAndWaitOrFail(t, cmd, WaitSuccess)
 	}
 
 	// Get hash from 'rkt image list'

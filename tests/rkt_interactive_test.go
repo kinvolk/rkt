@@ -102,8 +102,6 @@ func TestInteractive(t *testing.T) {
 			t.Fatalf("Expected %q but not found #%v: %v", tt.expect, i, err)
 		}
 
-		if err := child.Wait(); err != nil {
-			t.Fatalf("rkt didn't terminate correctly: %v", err)
-		}
+		waitOrFail(t, child, WaitSuccess)
 	}
 }

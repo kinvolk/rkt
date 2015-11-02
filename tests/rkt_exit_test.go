@@ -35,7 +35,7 @@ func TestExitCodeSimple(t *testing.T) {
 		cmd := fmt.Sprintf(`%s --debug --insecure-skip-verify run --mds-register=false %s`,
 			ctx.Cmd(), imageFile)
 		t.Logf("%s\n", cmd)
-		spawnAndWaitOrFail(t, cmd, true)
+		spawnAndWaitOrFail(t, cmd, WaitSuccess)
 		checkAppStatus(t, ctx, false, "rkt-inspect", fmt.Sprintf("status=%d", i))
 		ctx.Reset()
 	}
@@ -85,7 +85,7 @@ func TestExitCodeWithSeveralApps(t *testing.T) {
 	checkAppStatus(t, ctx, true, "hello2", "status=0")
 
 	t.Logf("Waiting pod termination\n")
-	waitOrFail(t, child, true)
+	waitOrFail(t, child, WaitSuccess)
 
 	t.Logf("Check final status\n")
 

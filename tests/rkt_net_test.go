@@ -44,7 +44,7 @@ func TestNetHost(t *testing.T) {
 	cmd := fmt.Sprintf("%s --net=host --debug --insecure-skip-verify run --mds-register=false %s", ctx.Cmd(), testImage)
 	child := spawnOrFail(t, cmd)
 	ctx.RegisterChild(child)
-	defer waitOrFail(t, child, true)
+	defer waitOrFail(t, child, WaitSuccess)
 
 	expectedRegex := `NetNS: (net:\[\d+\])`
 	result, out, err := expectRegexWithOutput(child, expectedRegex)
@@ -132,7 +132,7 @@ func TestNetNone(t *testing.T) {
 	cmd := fmt.Sprintf("%s --debug --insecure-skip-verify run --net=none --mds-register=false %s", ctx.Cmd(), testImage)
 
 	child := spawnOrFail(t, cmd)
-	defer waitOrFail(t, child, true)
+	defer waitOrFail(t, child, WaitSuccess)
 	expectedRegex := `NetNS: (net:\[\d+\])`
 	result, out, err := expectRegexWithOutput(child, expectedRegex)
 	if err != nil {
@@ -178,7 +178,7 @@ func TestNetDefaultNetNS(t *testing.T) {
 	f := func(argument string) {
 		cmd := fmt.Sprintf("%s --debug --insecure-skip-verify run %s --mds-register=false %s", ctx.Cmd(), argument, testImage)
 		child := spawnOrFail(t, cmd)
-		defer waitOrFail(t, child, true)
+		defer waitOrFail(t, child, WaitSuccess)
 
 		expectedRegex := `NetNS: (net:\[\d+\])`
 		result, out, err := expectRegexWithOutput(child, expectedRegex)
@@ -655,7 +655,7 @@ func TestNetOverride(t *testing.T) {
 
 	cmd := fmt.Sprintf("%s --debug --insecure-skip-verify run --net=all --net=\"%s:IP=%s\" --mds-register=false %s", ctx.Cmd(), nt.Name, expectedIP, testImage)
 	child := spawnOrFail(t, cmd)
-	defer waitOrFail(t, child, true)
+	defer waitOrFail(t, child, WaitSuccess)
 
 	expectedRegex := `IPv4: (\d+\.\d+\.\d+\.\d+)`
 	result, out, err := expectRegexTimeoutWithOutput(child, expectedRegex, 30*time.Second)

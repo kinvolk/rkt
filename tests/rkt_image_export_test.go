@@ -92,8 +92,12 @@ func TestImageExport(t *testing.T) {
 	for i, tt := range tests {
 		outputAciPath := filepath.Join(tmpDir, fmt.Sprintf("exported-%d.aci", i))
 		runCmd := fmt.Sprintf("%s image export %s %s", ctx.Cmd(), tt.image, outputAciPath)
+		result := WaitFailure
+		if tt.shouldFind {
+			result = WaitSuccess
+		}
 		t.Logf("Running 'image export' test #%v: %v", i, runCmd)
-		spawnAndWaitOrFail(t, runCmd, tt.shouldFind)
+		spawnAndWaitOrFail(t, runCmd, result)
 
 		if !tt.shouldFind {
 			continue

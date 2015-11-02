@@ -44,7 +44,7 @@ func TestAceValidator(t *testing.T) {
 	rktCmd := fmt.Sprintf("%s %s", ctx.Cmd(), rktArgs)
 
 	child := spawnOrFail(t, rktCmd)
-	defer waitOrFail(t, child, true)
+	defer waitOrFail(t, child, WaitSuccess)
 
 	for _, e := range expectedResults {
 		if err := expectWithOutput(child, e); err != nil {

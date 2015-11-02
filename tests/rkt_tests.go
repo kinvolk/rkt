@@ -33,6 +33,14 @@ import (
 	"github.com/coreos/rkt/tests/testutils"
 )
 
+type WaitResult int
+
+const (
+	WaitSuccess WaitResult = iota
+	WaitFailure
+	WaitDontCare
+)
+
 const (
 	nobodyUid = uint32(65534)
 )
@@ -107,21 +115,30 @@ func spawnOrFail(t *testing.T, cmd string) *gexpect.ExpectSubprocess {
 	return child
 }
 
-func waitOrFail(t *testing.T, child *gexpect.ExpectSubprocess, shouldSucceed bool) {
+func waitOrFail(t *testing.T, child *gexpect.ExpectSubprocess, result WaitResult) {
 	err := child.Wait()
-	switch {
-	case !shouldSucceed && err == nil:
-		t.Fatalf("Expected test to fail but it didn't")
-	case shouldSucceed && err != nil:
-		t.Fatalf("rkt didn't terminate correctly: %v", err)
-	case err != nil && err.Error() != "exit status 1":
-		t.Fatalf("rkt terminated with unexpected error: %v", err)
+	switch result {
+	case WaitSuccess:
+		if err != nil {
+			t.Fatalf("expected process to succeed but it did not: %v", err)
+		}
+	case WaitFailure:
+		if err == nil {
+			t.Fatalf("expected process to fail but it did not")
+		}
+		if err.Error() != "exit status 1" {
+			t.Fatalf("expected exit status to be 1 but it was not: %v", err)
+		}
+	case WaitDontCare:
+		if err != nil && !strings.HasPrefix(err.Error(), "exit status ") {
+			t.Fatalf("expected process to exit on its own but it did not: %v")
+		}
 	}
 }
 
-func spawnAndWaitOrFail(t *testing.T, cmd string, shouldSucceed bool) {
+func spawnAndWaitOrFail(t *testing.T, cmd string, result WaitResult) {
 	child := spawnOrFail(t, cmd)
-	waitOrFail(t, child, shouldSucceed)
+	waitOrFail(t, child, result)
 }
 
 func getEmptyImagePath() string {
@@ -183,6 +200,7 @@ func importImageAndFetchHashAsGid(t *testing.T, ctx *testutils.RktRunCtx, img st
 		child.Cmd.SysProcAttr.Credential = &syscall.Credential{Uid: nobodyUid, Gid: uint32(gid)}
 	}
 
+	t.Logf("Running command: %s", cmd)
 	err = child.Start()
 	if err != nil {
 		t.Fatalf("cannot exec rkt: %v", err)
@@ -194,7 +212,7 @@ func importImageAndFetchHashAsGid(t *testing.T, ctx *testutils.RktRunCtx, img st
 		t.Fatalf("Error: %v\nOutput: %v", err, out)
 	}
 
-	waitOrFail(t, child, true)
+	waitOrFail(t, child, WaitSuccess)
 
 	return result[0]
 }
@@ -212,17 +230,17 @@ func patchImportAndFetchHash(image string, patches []string, t *testing.T, ctx *
 
 func runImageGC(t *testing.T, ctx *testutils.RktRunCtx) {
 	cmd := fmt.Sprintf("%s image gc", ctx.Cmd())
-	spawnAndWaitOrFail(t, cmd, true)
+	spawnAndWaitOrFail(t, cmd, WaitSuccess)
 }
 
 func removeFromCas(t *testing.T, ctx *testutils.RktRunCtx, hash string) {
 	cmd := fmt.Sprintf("%s image rm %s", ctx.Cmd(), hash)
-	spawnAndWaitOrFail(t, cmd, true)
+	spawnAndWaitOrFail(t, cmd, WaitSuccess)
 }
 
 func runRktAndGetUUID(t *testing.T, rktCmd string) string {
 	child := spawnOrFail(t, rktCmd)
-	defer waitOrFail(t, child, true)
+	defer waitOrFail(t, child, WaitSuccess)
 
 	result, out, err := expectRegexWithOutput(child, "\n[0-9a-f-]{36}")
 	if err != nil || len(result) != 1 {
@@ -248,11 +266,16 @@ func runRktAsGidAndCheckOutput(t *testing.T, rktCmd, expectedLine string, expect
 		child.Cmd.SysProcAttr.Credential = &syscall.Credential{Uid: nobodyUid, Gid: uint32(gid)}
 	}
 
+	t.Logf("Running command: %s", rktCmd)
 	err = child.Start()
 	if err != nil {
 		t.Fatalf("cannot exec rkt: %v", err)
 	}
-	defer waitOrFail(t, child, !expectError)
+	result := WaitSuccess
+	if expectError {
+		result = WaitFailure
+	}
+	defer waitOrFail(t, child, result)
 
 	if expectedLine != "" {
 		if err := expectWithOutput(child, expectedLine); err != nil {
@@ -292,7 +315,7 @@ func checkAppStatus(t *testing.T, ctx *testutils.RktRunCtx, multiApps bool, appN
 
 	t.Logf("Get status for app %s\n", appName)
 	child := spawnOrFail(t, cmd)
-	defer waitOrFail(t, child, true)
+	defer waitOrFail(t, child, WaitSuccess)
 
 	if err := expectWithOutput(child, expected); err != nil {
 		// For debugging purposes, print the full output of

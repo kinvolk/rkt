@@ -64,7 +64,7 @@ func testFetchFromFile(t *testing.T, arg string, image string) {
 	if err := expectWithOutput(child, fetchFromFileMsg); err != nil {
 		t.Fatalf("%q should be found: %v", fetchFromFileMsg, err)
 	}
-	child.Wait()
+	waitOrFail(t, child, WaitDontCare)
 
 	// 1. Run cmd again, should get $fetchFromFileMsg.
 	runRktAndCheckOutput(t, cmd, fetchFromFileMsg, false)
@@ -124,7 +124,7 @@ func testFetchDefault(t *testing.T, arg string, image string, finalURL string) {
 	if err := expectWithOutput(child, remoteFetchMsg); err != nil {
 		t.Fatalf("%q should be found: %v", remoteFetchMsg, err)
 	}
-	child.Wait()
+	waitOrFail(t, child, WaitDontCare)
 
 	// 2. Run cmd with the image available in the store, should get $storeMsg.
 	runRktAndCheckRegexOutput(t, cmd, storeMsg)
@@ -166,5 +166,5 @@ func testFetchNoStore(t *testing.T, args string, image string, finalURL string) 
 	if err := expectWithOutput(child, remoteFetchMsg); err != nil {
 		t.Fatalf("%q should be found: %v", remoteFetchMsg, err)
 	}
-	child.Wait()
+	waitOrFail(t, child, WaitDontCare)
 }

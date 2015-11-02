@@ -85,9 +85,7 @@ func TestPidFileDelayedStart(t *testing.T) {
 	if err := expectWithOutput(enterChild, "RktEnterWorksFine"); err != nil {
 		t.Fatalf("Waited for enter to works but failed: %v", err)
 	}
-	if err := enterChild.Wait(); err != nil {
-		t.Fatalf("rkt enter didn't terminate correctly: %v", err)
-	}
+	waitOrFail(t, enterChild, WaitSuccess)
 
 	// Terminate the pod
 	if err := runChild.SendLine("Bye"); err != nil {
@@ -96,9 +94,7 @@ func TestPidFileDelayedStart(t *testing.T) {
 	if err := expectWithOutput(runChild, "Received text: Bye"); err != nil {
 		t.Fatalf("Expected Bye but not found: %v", err)
 	}
-	if err := runChild.Wait(); err != nil {
-		t.Fatalf("rkt didn't terminate correctly: %v", err)
-	}
+	waitOrFail(t, runChild, WaitSuccess)
 }
 
 // Check that "enter" doesn't wait forever for the ppid file when the pod is terminated
@@ -115,13 +111,11 @@ func TestPidFileAbortedStart(t *testing.T) {
 	if err := runChild.SendLine("\035\035\035"); err != nil {
 		t.Fatalf("Failed to terminate the pod: %v", err)
 	}
-	waitOrFail(t, runChild, false)
+	waitOrFail(t, runChild, WaitFailure)
 
 	// Now the "enter" command terminates quickly
 	before := time.Now()
-	if err := enterChild.Wait(); err.Error() != "exit status 1" {
-		t.Fatalf("rkt enter didn't terminate as expected: %v", err)
-	}
+	waitOrFail(t, enterChild, WaitFailure)
 	delay := time.Now().Sub(before)
 	t.Logf("rkt enter terminated %v after the pod was terminated", delay)
 	if delay > time.Second { // 1 second shall be enough: it takes less than 50ms on my computer

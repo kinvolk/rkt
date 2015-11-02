@@ -19,7 +19,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/coreos/rkt/Godeps/_workspace/src/github.com/steveeJ/gexpect"
 	"github.com/coreos/rkt/tests/testutils"
 )
 
@@ -37,7 +36,7 @@ func runRktTrust(t *testing.T, ctx *testutils.RktRunCtx, prefix string) {
 	}
 
 	child := spawnOrFail(t, cmd)
-	defer waitOrFail(t, child, true)
+	defer waitOrFail(t, child, WaitSuccess)
 
 	expected := "Are you sure you want to trust this key"
 	if err := expectWithOutput(child, expected); err != nil {
@@ -67,15 +66,7 @@ func runSignImage(t *testing.T, ctx *testutils.RktRunCtx, imageFile string) {
 	cmd := fmt.Sprintf("gpg --no-default-keyring --secret-keyring %s/secring.gpg --keyring %s/pubring.gpg --default-key D9DCEF41 --output %s.asc --detach-sig %s",
 		dir, dir, imageFile, imageFile)
 	t.Logf("%s\n", cmd)
-	child, err := gexpect.Spawn(cmd)
-	if err != nil {
-		t.Fatalf("Cannot exec gpg: %s", err)
-	}
-
-	err = child.Wait()
-	if err != nil {
-		t.Fatalf("gpg terminate as expected: %v", err)
-	}
+	spawnAndWaitOrFail(t, cmd, WaitSuccess)
 }
 
 func TestTrust(t *testing.T) {

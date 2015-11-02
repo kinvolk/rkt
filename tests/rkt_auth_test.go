@@ -26,6 +26,24 @@ import (
 	"github.com/coreos/rkt/tests/testutils"
 )
 
+type authDownloadResult int
+
+const (
+	authSuccessfulDownload authDownloadResult = iota
+	authFailedDownload
+)
+
+func (r authDownloadResult) String() string {
+	switch r {
+	case authSuccessfulDownload:
+		return "Authentication succeeded."
+	case authFailedDownload:
+		return "error downloading ACI: bad HTTP status code: 401"
+	}
+	panic(fmt.Sprintf("Unknown authDownloadResult value: %d", (int)(r)))
+	return ""
+}
+
 func TestAuthSanity(t *testing.T) {
 	ctx := testutils.NewRktRunCtx(t)
 	defer ctx.Cleanup()
@@ -33,11 +51,6 @@ func TestAuthSanity(t *testing.T) {
 	defer server.Close()
 	expectedRunRkt(ctx, t, server.URL, "sanity", authSuccessfulDownload)
 }
-
-const (
-	authSuccessfulDownload = "Authentication succeeded."
-	authFailedDownload     = "error downloading ACI: bad HTTP status code: 401"
-)
 
 type authConfDir int
 
@@ -50,7 +63,7 @@ const (
 type genericAuthTest struct {
 	name         string
 	confDir      authConfDir
-	expectedLine string
+	expectedLine authDownloadResult
 }
 
 func TestAuthBasic(t *testing.T) {
@@ -101,8 +114,8 @@ func TestAuthOverride(t *testing.T) {
 		systemConfig         string
 		localConfig          string
 		name                 string
-		resultBeforeOverride string
-		resultAfterOverride  string
+		resultBeforeOverride authDownloadResult
+		resultAfterOverride  authDownloadResult
 	}{
 		{server.Conf, getInvalidOAuthConfig(server.Conf), "valid-system-invalid-local", authSuccessfulDownload, authFailedDownload},
 		{getInvalidOAuthConfig(server.Conf), server.Conf, "invalid-system-valid-local", authFailedDownload, authSuccessfulDownload},
@@ -171,23 +184,27 @@ func serverHandler(t *testing.T, server *taas.Server) {
 // given directory on host. Note that directory can be anything - it's
 // useful for ensuring that image name is unique and for descriptive
 // purposes.
-func expectedRunRkt(ctx *testutils.RktRunCtx, t *testing.T, host, dir, line string) {
+func expectedRunRkt(ctx *testutils.RktRunCtx, t *testing.T, host, dir string, line authDownloadResult) {
 	// First, check that --insecure-skip-verify is required
 	// The server does not provide signatures for now.
 	cmd := fmt.Sprintf(`%s --debug run --mds-register=false %s/%s/prog.aci`, ctx.Cmd(), host, dir)
-	child := spawnOrFail(t, cmd)
-	defer child.Wait()
+	failChild := spawnOrFail(t, cmd)
+	defer waitOrFail(t, failChild, WaitFailure)
 	signatureErrorLine := "error downloading the signature file"
-	if err := expectWithOutput(child, signatureErrorLine); err != nil {
+	if err := expectWithOutput(failChild, signatureErrorLine); err != nil {
 		t.Fatalf("Didn't receive expected output %q: %v", signatureErrorLine, err)
 	}
 
 	// Then, run with --insecure-skip-verify
 	cmd = fmt.Sprintf(`%s --debug --insecure-skip-verify run --mds-register=false %s/%s/prog.aci`, ctx.Cmd(), host, dir)
-	child = spawnOrFail(t, cmd)
-	defer child.Wait()
-	if err := expectWithOutput(child, line); err != nil {
-		t.Fatalf("Didn't receive expected output %q: %v", line, err)
+	child := spawnOrFail(t, cmd)
+	result := WaitFailure
+	if line == authSuccessfulDownload {
+		result = WaitSuccess
+	}
+	defer waitOrFail(t, child, result)
+	if err := expectWithOutput(child, line.String()); err != nil {
+		t.Fatalf("Didn't receive expected output %q: %v", line.String(), err)
 	}
 }
 

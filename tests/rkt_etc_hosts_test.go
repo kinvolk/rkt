@@ -22,7 +22,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/coreos/rkt/Godeps/_workspace/src/github.com/steveeJ/gexpect"
 	"github.com/coreos/rkt/tests/testutils"
 )
 
@@ -69,19 +68,10 @@ func TestPrepareAppEnsureEtcHosts(t *testing.T) {
 
 		t.Logf("Running test #%v: %v", i, cmd)
 
-		child, err := gexpect.Spawn(cmd)
-		if err != nil {
-			t.Fatalf("Cannot exec rkt #%v: %v", i, err)
-		}
-
-		_, _, err = expectRegexTimeoutWithOutput(child, tt.expectRegEx, time.Minute)
-		if err != nil {
+		child := spawnOrFail(t, cmd)
+		if _, _, err := expectRegexTimeoutWithOutput(child, tt.expectRegEx, time.Minute); err != nil {
 			t.Fatalf("Expected %q but not found #%v: %v", tt.expectRegEx, i, err)
 		}
-
-		err = child.Wait()
-		if err != nil {
-			t.Fatalf("rkt didn't terminate correctly: %v", err)
-		}
+		waitOrFail(t, child, WaitSuccess)
 	}
 }

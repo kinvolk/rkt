@@ -71,8 +71,12 @@ func TestImageExtract(t *testing.T) {
 	for i, tt := range tests {
 		outputPath := filepath.Join(tmpDir, fmt.Sprintf("extracted-%d", i))
 		runCmd := fmt.Sprintf("%s image extract --rootfs-only %s %s", ctx.Cmd(), tt.image, outputPath)
+		result := WaitFailure
+		if tt.shouldFind {
+			result = WaitSuccess
+		}
 		t.Logf("Running 'image extract' test #%v: %v", i, runCmd)
-		spawnAndWaitOrFail(t, runCmd, tt.shouldFind)
+		spawnAndWaitOrFail(t, runCmd, result)
 
 		if !tt.shouldFind {
 			continue

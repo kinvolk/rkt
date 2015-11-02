@@ -15,6 +15,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -62,31 +63,22 @@ func TestUserns(t *testing.T) {
 			runCmd = strings.Replace(runCmd, "^FILE^", tt.file, -1)
 			runCmd = strings.Replace(runCmd, "^USERNS^", userNsOpt, -1)
 
-			t.Logf("Running 'run' test #%v: %v", i, runCmd)
-			child, err := gexpect.Spawn(runCmd)
-			if err != nil {
-				t.Fatalf("Cannot exec rkt #%v: %v", i, err)
-			}
+			t.Logf("Running test #%v", i)
+			child := spawnOrFail(t, runCmd)
 
-			err = expectWithOutput(child, tt.file+": mode: "+tt.expectMode)
-			if err != nil {
-				t.Fatalf("Expected %q but not found: %v", tt.expectMode, err)
-			}
-			err = expectWithOutput(child, tt.file+": user: "+tt.expectUid)
-			if err != nil {
-				t.Fatalf("Expected %q but not found: %v", tt.expectUid, err)
-			}
-			err = expectWithOutput(child, tt.file+": group: "+tt.expectGid)
-			if err != nil {
-				t.Fatalf("Expected %q but not found: %v", tt.expectGid, err)
-			}
+			testUserNsFile(t, child, tt.file, "mode", tt.expectMode)
+			testUserNsFile(t, child, tt.file, "user", tt.expectUid)
+			testUserNsFile(t, child, tt.file, "group", tt.expectGid)
 
-			err = child.Wait()
-			if err != nil {
-				t.Fatalf("rkt didn't terminate correctly: %v", err)
-			}
-
+			waitOrFail(t, child, WaitSuccess)
 			ctx.Reset()
 		}
+	}
+}
+
+func testUserNsFile(t *testing.T, child *gexpect.ExpectSubprocess, file, kind, id string) {
+	snippet := fmt.Sprintf("%s: %s: %s", file, kind, id)
+	if err := expectWithOutput(child, snippet); err != nil {
+		t.Fatalf("Expected %s %q but not found: %v", kind, id, err)
 	}
 }

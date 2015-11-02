@@ -524,11 +524,11 @@ func TestPodManifest(t *testing.T) {
 				t.Fatalf("Expected %q but not found: %v", tt.expectedResult, err)
 			}
 		}
-		if err := child.Wait(); err != nil {
-			if tt.shouldSucceed {
-				t.Fatalf("rkt didn't terminate correctly: %v", err)
-			}
+		result := WaitFailure
+		if tt.shouldSucceed {
+			result = WaitSuccess
 		}
+		waitOrFail(t, child, result)
 		verifyHostFile(t, tmpdir, "file", i, tt.expectedResult)
 
 		// 2. Test 'rkt prepare' + 'rkt run-prepared'.
@@ -545,11 +545,7 @@ func TestPodManifest(t *testing.T) {
 				t.Fatalf("Expected %q but not found: %v", tt.expectedResult, err)
 			}
 		}
-		if err := child.Wait(); err != nil {
-			if tt.shouldSucceed {
-				t.Fatalf("rkt didn't terminate correctly: %v", err)
-			}
-		}
+		waitOrFail(t, child, result)
 		verifyHostFile(t, tmpdir, "file", i, tt.expectedResult)
 
 		// we run the garbage collector and remove the imported images to save

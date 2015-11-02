@@ -21,7 +21,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/coreos/rkt/Godeps/_workspace/src/github.com/steveeJ/gexpect"
 	"github.com/coreos/rkt/common"
 	"github.com/coreos/rkt/tests/testutils"
 )
@@ -39,14 +38,7 @@ func TestImageGCTreeStore(t *testing.T) {
 	// at this point we know that RKT_INSPECT_IMAGE env var is not empty
 	referencedACI := os.Getenv("RKT_INSPECT_IMAGE")
 	cmd := fmt.Sprintf("%s --insecure-skip-verify run --mds-register=false %s", ctx.Cmd(), referencedACI)
-	t.Logf("Running %s: %v", referencedACI, cmd)
-	child, err := gexpect.Spawn(cmd)
-	if err != nil {
-		t.Fatalf("Cannot exec: %v", err)
-	}
-	if err := child.Wait(); err != nil {
-		t.Fatalf("rkt didn't terminate correctly: %v", err)
-	}
+	spawnAndWaitOrFail(t, cmd, WaitSuccess)
 
 	treeStoreIDs, err := getTreeStoreIDs(ctx)
 	if err != nil {
