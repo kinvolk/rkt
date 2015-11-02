@@ -64,6 +64,11 @@ func NewRktRunCtx(t *testing.T) *RktRunCtx {
 	}
 }
 
+// T returns testing.T instance
+func (ctx *RktRunCtx) T() *testing.T {
+	return ctx.t
+}
+
 // DataDir returns a data directory description
 func (ctx *RktRunCtx) DataDir() *DirDesc {
 	return ctx.dir(0)
