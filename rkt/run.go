@@ -95,7 +95,7 @@ func init() {
 	cmdRun.Flags().SetInterspersed(false)
 }
 
-func runRun(cmd *cobra.Command, args []string) (exit int) {
+func runRun(cmd *cobra.Command, args []string) int {
 	privateUsers := uid.NewBlankUidRange()
 	err := parseApps(&rktApps, args, cmd.Flags(), true)
 	if err != nil {

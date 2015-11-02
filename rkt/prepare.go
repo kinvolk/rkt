@@ -68,7 +68,7 @@ func init() {
 	cmdPrepare.Flags().SetInterspersed(false)
 }
 
-func runPrepare(cmd *cobra.Command, args []string) (exit int) {
+func runPrepare(cmd *cobra.Command, args []string) int {
 	var err error
 	origStdout := os.Stdout
 	privateUsers := uid.NewBlankUidRange()
