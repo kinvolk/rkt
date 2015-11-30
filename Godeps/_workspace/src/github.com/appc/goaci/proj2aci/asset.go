@@ -31,11 +31,11 @@ func PrepareAssets(assets []string, rootfs string, placeholderMapping map[string
 			if len(splitAsset) != 2 {
 				return fmt.Errorf("Malformed asset option: '%v' - expected two absolute paths separated with %v", asset, listSeparator())
 			}
-			evalSrc, srcErr = evalPath(splitAsset[0])
-			if srcErr {
+			evalSrc, srcErr := evalPath(splitAsset[0])
+			if srcErr != nil {
 				return fmt.Errorf("Could not evaluate symlinks in source asset %q: %v", evalSrc, srcErr)
 			}
-			evalDest, destErr = evalPath(splitAsset[1])
+			evalDest, destErr := evalPath(splitAsset[1])
 			asset = getAssetString(evalSrc, evalDest)
 			Debug("Processing asset:", asset)
 			if _, ok := processedAssets[asset]; ok {
@@ -61,8 +61,8 @@ func PrepareAssets(assets []string, rootfs string, placeholderMapping map[string
 }
 
 func evalPath(path string) (string, error) {
-	symlinkDir := filepath.Dir(symlink)
-	symlinkBase := filepath.Base(symlink)
+	symlinkDir := filepath.Dir(path)
+	symlinkBase := filepath.Base(path)
 	realSymlinkDir, err := filepath.EvalSymlinks(symlinkDir)
 	if err != nil {
 		return path, err
