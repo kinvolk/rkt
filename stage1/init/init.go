@@ -91,7 +91,8 @@ const (
 	// Path to systemd-nspawn binary within the stage1 rootfs
 	nspawnBin = "/usr/bin/systemd-nspawn"
 	// Path to the interpreter within the stage1 rootfs
-	interpBin = "/usr/lib/ld-linux-x86-64.so.2"
+	interpBin    = "/usr/lib/ld-linux-x86-64.so.2"
+	interpBinSrc = "/usr/lib64/ld-linux-x86-64.so.2"
 	// Path to the localtime file/symlink in host
 	localtimePath = "/etc/localtime"
 )
@@ -358,6 +359,7 @@ func getArgsEnv(p *Pod, flavor string, debug bool, n *networking.Networking) ([]
 		env = append(env, "LD_LIBRARY_PATH="+filepath.Join(common.Stage1RootfsPath(p.Root), "usr/lib"))
 
 	case "src":
+		args = append(args, filepath.Join(common.Stage1RootfsPath(p.Root), interpBinSrc))
 		args = append(args, filepath.Join(common.Stage1RootfsPath(p.Root), nspawnBin))
 		args = append(args, "--boot") // Launch systemd in the pod
 
@@ -370,6 +372,8 @@ func getArgsEnv(p *Pod, flavor string, debug bool, n *networking.Networking) ([]
 		} else {
 			args = append(args, fmt.Sprintf("--register=false"))
 		}
+
+		env = append(env, "LD_LIBRARY_PATH="+filepath.Join(common.Stage1RootfsPath(p.Root), "usr/lib"))
 
 	case "host":
 		hostNspawnBin, err := lookupPath("systemd-nspawn", os.Getenv("PATH"))
@@ -643,6 +647,10 @@ func stage1() int {
 		log.Fatalf("Error making / a shared and slave mount: %v", err)
 	}
 
+	if err := syscall.Unmount("/sys", 0); err != nil {
+		log.Fatalf(`Error unmounting "/sys": %v`, err)
+	}
+
 	enabledCgroups, err := cgroup.GetEnabledCgroups()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error getting cgroups: %v", err)
@@ -720,6 +728,15 @@ func mountHostCgroups(enabledCgroups map[int][]string) error {
 		}
 	}
 
+	var flags uintptr
+	// Bind-mount sys filesystem
+	flags = syscall.MS_MGC_VAL |
+		syscall.MS_BIND |
+		syscall.MS_REC
+	if err := syscall.Mount("/sys", "/sys", "", flags, ""); err != nil {
+		return fmt.Errorf("error making /sys a mountpoint: %v", err)
+	}
+
 	return nil
 }
 
@@ -730,6 +747,7 @@ func mountContainerCgroups(s1Root string, enabledCgroups map[int][]string, subcg
 	if err := cgroup.CreateCgroups(s1Root, enabledCgroups); err != nil {
 		return fmt.Errorf("error creating container cgroups: %v\n", err)
 	}
+	fmt.Printf("s1Root = %s, enabledCgroups = %v, subcgroup = %s, serviceNames = %v\n", s1Root, enabledCgroups, subcgroup, serviceNames)
 	if err := cgroup.RemountCgroupsRO(s1Root, enabledCgroups, subcgroup, serviceNames); err != nil {
 		return fmt.Errorf("error restricting container cgroups: %v\n", err)
 	}
