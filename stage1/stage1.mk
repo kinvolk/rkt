@@ -54,6 +54,8 @@
 # STAGE1_ENTER_CMD_$(flavor) - an enter command in stage1 to be used
 # for the "rkt enter" command.
 STAGE1_FLAVORS := $(call commas-to-spaces,$(RKT_STAGE1_ALL_FLAVORS))
+# filter out the fly flavor - it is special
+STAGE1_FLAVORS := $(filter-out,fly,$(STAGE1_FLAVORS))
 STAGE1_BUILT_FLAVORS := $(call commas-to-spaces,$(RKT_STAGE1_FLAVORS))
 $(foreach f,$(STAGE1_FLAVORS), \
 	$(eval STAGE1_COPY_SO_DEPS_$f :=) \

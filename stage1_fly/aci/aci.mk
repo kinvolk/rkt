@@ -1,0 +1,41 @@
+$(call setup-stamp-file,FLY_ACI_STAMP,aci-manifest)
+$(call setup-tmp-dir,FLY_ACI_TMPDIR_BASE)
+
+FLY_ACI_TMPDIR := $(FLY_ACI_TMPDIR_BASE)/fly
+# a manifest template
+FLY_ACI_SRC_MANIFEST := $(MK_SRCDIR)/aci-manifest.in
+# generated manifest to be copied to the ACI directory
+FLY_ACI_GEN_MANIFEST := $(FLY_ACI_TMPDIR)/manifest
+# manifest in the ACI directory
+FLY_ACI_MANIFEST := $(FLY_ACIDIR)/manifest
+# escaped values of the ACI image name, version and enter command, so
+# they can be safely used in the replacement part of sed's s///
+# command.
+FLY_ACI_VERSION := $(call sed-replacement-escape,$(RKT_VERSION))
+# stamp and dep file for invalidating the generated manifest if name,
+# version or enter command changes for this flavor
+$(call setup-stamp-file,FLY_ACI_MANIFEST_KV_DEPMK_STAMP,$manifest-kv-dep)
+$(call setup-dep-file,FLY_ACI_MANIFEST_KV_DEPMK,manifest-kv-dep)
+
+# main stamp rule - makes sure manifest and deps files are generated
+$(call generate-stamp-rule,$(FLY_ACI_STAMP),$(FLY_ACI_MANIFEST) $(FLY_ACI_MANIFEST_KV_DEPMK_STAMP))
+
+# invalidate generated manifest if version changes
+$(call generate-kv-deps,$(FLY_ACI_MANIFEST_KV_DEPMK_STAMP),$(FLY_ACI_GEN_MANIFEST),$(FLY_ACI_MANIFEST_KV_DEPMK),FLY_ACI_VERSION)
+
+# this rule generates a manifest
+$(call forward-vars,$(FLY_ACI_GEN_MANIFEST), \
+	FLY_ACI_VERSION)
+$(FLY_ACI_GEN_MANIFEST): $(FLY_ACI_SRC_MANIFEST) | $(FLY_ACI_TMPDIR)
+	$(VQ) \
+	set -e; \
+	$(call vb,vt,MANIFEST,fly) \
+	sed \
+		-e 's/@RKT_STAGE1_VERSION@/$(FLY_ACI_VERSION)/g' \
+	"$<" >"$@.tmp"; \
+	$(call bash-cond-rename,$@.tmp,$@)
+
+INSTALL_DIRS += $(FLY_ACI_TMPDIR)
+FLY_STAMPS += $(FLY_ACI_STAMP)
+INSTALL_FILES += \
+	$(FLY_ACI_GEN_MANIFEST):$(FLY_ACI_MANIFEST):0644
