@@ -16,6 +16,11 @@ FLY_ACI_VERSION := $(call sed-replacement-escape,$(RKT_VERSION))
 # version or enter command changes for this flavor
 $(call setup-stamp-file,FLY_ACI_MANIFEST_KV_DEPMK_STAMP,$manifest-kv-dep)
 $(call setup-dep-file,FLY_ACI_MANIFEST_KV_DEPMK,manifest-kv-dep)
+FLY_ACI_DIRS := \
+	$(FLY_ACIROOTFSDIR)/rkt \
+	$(FLY_ACIROOTFSDIR)/rkt/status \
+	$(FLY_ACIROOTFSDIR)/opt \
+	$(FLY_ACIROOTFSDIR)/opt/stage2
 
 # main stamp rule - makes sure manifest and deps files are generated
 $(call generate-stamp-rule,$(FLY_ACI_STAMP),$(FLY_ACI_MANIFEST) $(FLY_ACI_MANIFEST_KV_DEPMK_STAMP))
@@ -26,7 +31,7 @@ $(call generate-kv-deps,$(FLY_ACI_MANIFEST_KV_DEPMK_STAMP),$(FLY_ACI_GEN_MANIFES
 # this rule generates a manifest
 $(call forward-vars,$(FLY_ACI_GEN_MANIFEST), \
 	FLY_ACI_VERSION)
-$(FLY_ACI_GEN_MANIFEST): $(FLY_ACI_SRC_MANIFEST) | $(FLY_ACI_TMPDIR)
+$(FLY_ACI_GEN_MANIFEST): $(FLY_ACI_SRC_MANIFEST) | $(FLY_ACI_TMPDIR) $(FLY_ACI_DIRS)
 	$(VQ) \
 	set -e; \
 	$(call vb,vt,MANIFEST,fly) \
@@ -35,7 +40,9 @@ $(FLY_ACI_GEN_MANIFEST): $(FLY_ACI_SRC_MANIFEST) | $(FLY_ACI_TMPDIR)
 	"$<" >"$@.tmp"; \
 	$(call bash-cond-rename,$@.tmp,$@)
 
-INSTALL_DIRS += $(FLY_ACI_TMPDIR)
+INSTALL_DIRS += \
+	$(FLY_ACI_TMPDIR):- \
+	$(foreach d,$(FLY_ACI_DIRS),$d:-)
 FLY_STAMPS += $(FLY_ACI_STAMP)
 INSTALL_FILES += \
 	$(FLY_ACI_GEN_MANIFEST):$(FLY_ACI_MANIFEST):0644
