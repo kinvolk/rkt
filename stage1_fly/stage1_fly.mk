@@ -27,3 +27,5 @@ ifneq ($(filter fly,$(FLY_FLAVORS)),)
 TOPLEVEL_STAMPS += $(FLY_STAMP)
 
 endif
+
+$(call undefine-namespaces,FLY _FLY)
