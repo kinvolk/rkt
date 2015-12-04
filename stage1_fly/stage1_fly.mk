@@ -20,6 +20,8 @@ INSTALL_DIRS += \
 
 FLY_FLAVORS := $(call commas-to-spaces,$(RKT_STAGE1_FLAVORS))
 
+CLEAN_FILES += $(FLY_STAGE1)
+
 ifneq ($(filter fly,$(FLY_FLAVORS)),)
 
 # actually build the fly stage1 only if requested
