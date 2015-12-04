@@ -18,7 +18,7 @@ INSTALL_DIRS += \
 	$(FLY_ACIDIR):- \
 	$(FLY_ACIROOTFSDIR):-
 
-FLY_FLAVORS := $(call commas-to-spaces,$(RKT_STAGE1_ALL_FLAVORS))
+FLY_FLAVORS := $(call commas-to-spaces,$(RKT_STAGE1_FLAVORS))
 
 ifneq ($(filter fly,$(FLY_FLAVORS)),)
 
