@@ -39,6 +39,8 @@ import (
 
 	"github.com/coreos/rkt/Godeps/_workspace/src/github.com/appc/spec/schema"
 	"github.com/coreos/rkt/Godeps/_workspace/src/github.com/appc/spec/schema/types"
+	"github.com/coreos/rkt/Godeps/_workspace/src/github.com/joshlf/go-acl"
+
 	"github.com/coreos/rkt/common"
 	"github.com/coreos/rkt/common/apps"
 	"github.com/coreos/rkt/pkg/aci"
@@ -628,6 +630,34 @@ func prepareStage1Image(cfg PrepareConfig, img types.Hash, cdir string, useOverl
 	return nil
 }
 
+// setJournalPermissions sets ACLs and permissions so the rkt group can access
+// the pod's logs
+func setJournalPermissions(cfg RunConfig, cdir string) error {
+	s1 := common.Stage1ImagePath(cdir)
+
+	journalPath := filepath.Join(s1, "rootfs", "var", "log", "journal")
+	if err := os.MkdirAll(journalPath, os.FileMode(0755)); err != nil {
+		return fmt.Errorf("error creating journal dir: %v", err)
+	}
+
+	a := acl.FromUnix(os.FileMode(0755 | os.ModeSetgid))
+	a = append(a, acl.Entry{
+		Tag:       acl.TagGroup,
+		Qualifier: strconv.Itoa(cfg.RktGid),
+		Perms:     os.FileMode(05),
+	})
+	a = append(a, acl.Entry{
+		Tag:   acl.TagMask,
+		Perms: os.FileMode(05),
+	})
+
+	if err := fileutil.SetAcl(journalPath, a); err != nil {
+		log.Printf("Warning: error setting journal ACLs, you'll need root to read the pod journal: %v", err)
+	}
+
+	return nil
+}
+
 // setupStage1Image mounts the overlay filesystem for stage1.
 // When useOverlay is false it is a noop
 func setupStage1Image(cfg RunConfig, cdir string, useOverlay bool) error {
@@ -650,6 +680,10 @@ func setupStage1Image(cfg RunConfig, cdir string, useOverlay bool) error {
 		if err := os.Chtimes(statusPath, time.Now(), time.Now()); err != nil {
 			return fmt.Errorf("error touching status dir: %v", err)
 		}
+	}
+
+	if err := setJournalPermissions(cfg, cdir); err != nil {
+		return err
 	}
 
 	return nil

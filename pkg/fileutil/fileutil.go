@@ -25,6 +25,7 @@ import (
 	"github.com/coreos/rkt/pkg/uid"
 
 	"github.com/coreos/rkt/Godeps/_workspace/src/github.com/appc/spec/pkg/device"
+	"github.com/coreos/rkt/Godeps/_workspace/src/github.com/joshlf/go-acl"
 )
 
 func CopyRegularFile(src, dest string) (err error) {
@@ -224,4 +225,16 @@ func DirSize(path string) (int64, error) {
 	}
 
 	return 0, nil
+}
+
+func SetAcl(path string, a acl.ACL) error {
+	if err := acl.Set(path, a); err != nil {
+		return err
+	}
+
+	if err := acl.SetDefault(path, a); err != nil {
+		return err
+	}
+
+	return nil
 }
