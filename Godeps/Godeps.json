@@ -261,6 +261,10 @@
 			"Rev": "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
 		},
 		{
+			"ImportPath": "github.com/joshlf/go-acl",
+			"Rev": "383dd97ee4e37f8f2602ff5cfb7a1a582b14b123"
+		},
+		{
 			"ImportPath": "github.com/kballard/go-shellquote",
 			"Rev": "e5c918b80c17694cbc49aab32a759f9a40067f5d"
 		},
