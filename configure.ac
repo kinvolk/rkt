@@ -476,29 +476,28 @@ RKT_REQ_ABS_PROG([ABS_GO], [go])
 
 #### LINKER FLAGS
 
-dnl Detect go version. Go 1.4 and earlier support only "-X variable
-dnl 'value'" format of assigning values to variables via linker
-dnl flags. Go 1.5 deprecates this format in favor of "-X
-dnl 'variable=value'" format. Drop this ugliness when we drop support
-dnl for Go older than 1.5.
-GO_VERSION=`$ABS_GO version | grep -o 'go@<:@@<:@:digit:@:>@@:>@\+\.@<:@@<:@:digit:@:>@@:>@\+' | grep -o '@<:@@<:@:digit:@:>@@:>@\+\.@<:@@<:@:digit:@:>@@:>@\+'`
-GO_MAJOR=`echo $GO_VERSION | grep -o '^@<:@@<:@:digit:@:>@@:>@\+'`
-GO_MINOR=`echo $GO_VERSION | grep -o '@<:@@<:@:digit:@:>@@:>@\+$'`
+dnl Digits regexp class. Square brackets are used by m4 for quoting,
+dnl so to get literal square brackets, m4 provides ugly @<:@ and @:>@
+dnl for [ and ].
+m4_define([DIGITS],[@<:@0-9@:>@])
 
-AS_IF([test $GO_MAJOR -gt 1 -o $GO_MINOR -gt 4],
-      dnl We have Go 1.5 or greater.
-      [RKT_XF() {
-           echo "-X '$1=$2'"
-       }],
-      dnl We have Go 1.4 or lesser.
-      [RKT_XF() {
-           echo "-X $1 '$2'"
-       }])
+GO_MIN_MAJOR=1
+GO_MIN_MINOR=5
+GO_MIN_VERSION="${GO_MIN_MAJOR}.${GO_MIN_MINOR}"
+AC_MSG_CHECKING([whether we have go ${GO_MIN_VERSION} or newer])
+GO_VERSION=`"${ABS_GO}" version | sed -e 's/^go version go\(DIGITS*\.DIGITS*\).*/\1/'`
+GO_MAJOR=`echo "${GO_VERSION}" | grep -o '^DIGITS\+'`
+GO_MINOR=`echo "${GO_VERSION}" | grep -o 'DIGITS\+$'`
 
-RKT_STAGE1_DEFAULT_NAME_LDFLAGS=`RKT_XF main.defaultStage1Name "${RKT_STAGE1_DEFAULT_NAME}"`
-RKT_STAGE1_DEFAULT_VERSION_LDFLAGS=`RKT_XF main.defaultStage1Version "${RKT_STAGE1_DEFAULT_VERSION}"`
-RKT_STAGE1_DEFAULT_LOCATION_LDFLAGS=`RKT_XF main.defaultStage1Image "${RKT_STAGE1_DEFAULT_LOCATION}"`
-RKT_VERSION_LDFLAGS=`RKT_XF github.com/coreos/rkt/version.Version "${RKT_VERSION}"`
+AS_IF([test "${GO_MAJOR}" -gt "${GO_MIN_MAJOR}" || test "${GO_MAJOR}" -eq "${GO_MIN_MAJOR}" -a "${GO_MINOR}" -ge "${GO_MIN_MINOR}"],
+      [AC_MSG_RESULT([yes])],
+      [AC_MSG_RESULT([no])
+       AC_MSG_ERROR([*** go is too old (${GO_VERSION})])])
+
+RKT_STAGE1_DEFAULT_NAME_LDFLAGS="-X 'main.defaultStage1Name=${RKT_STAGE1_DEFAULT_NAME}'"
+RKT_STAGE1_DEFAULT_VERSION_LDFLAGS="-X 'main.defaultStage1Version=${RKT_STAGE1_DEFAULT_VERSION}'"
+RKT_STAGE1_DEFAULT_LOCATION_LDFLAGS="-X 'main.defaultStage1Image=${RKT_STAGE1_DEFAULT_LOCATION}'"
+RKT_VERSION_LDFLAGS="-X 'github.com/coreos/rkt/version.Version=${RKT_VERSION}'"
 
 #### SUBSTITUTIONS
 
