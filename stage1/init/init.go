@@ -564,50 +564,19 @@ func stage1() int {
 		return 3
 	}
 
-	// create a separate mount namespace so the cgroup filesystems
-	// are unmounted when exiting the pod
-	if err := syscall.Unshare(syscall.CLONE_NEWNS); err != nil {
-		log.Fatalf("Error unsharing: %v", err)
-	}
-
-	// we recursively make / a "shared and slave" so mount events from the
-	// new namespace don't propagate to the host namespace but mount events
-	// from the host propagate to the new namespace and are forwarded to
-	// its peer group
-	// See https://www.kernel.org/doc/Documentation/filesystems/sharedsubtree.txt
-	if err := syscall.Mount("", "/", "none", syscall.MS_REC|syscall.MS_SLAVE, ""); err != nil {
-		log.Fatalf("Error making / a slave mount: %v", err)
-	}
-	if err := syscall.Mount("", "/", "none", syscall.MS_REC|syscall.MS_SHARED, ""); err != nil {
-		log.Fatalf("Error making / a shared and slave mount: %v", err)
-	}
-
-	enabledCgroups, err := cgroup.GetEnabledCgroups()
+	unified, err := cgroup.IsUnified()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error getting cgroups: %v", err)
+		log.Fatalf("Error detecting cgroup hierarchy: %v", err)
 		return 5
 	}
 
-	// mount host cgroups in the rkt mount namespace
-	if err := mountHostCgroups(enabledCgroups); err != nil {
-		log.Fatalf("Couldn't mount the host cgroups: %v\n", err)
-		return 5
-	}
-
-	var serviceNames []string
-	for _, app := range p.Manifest.Apps {
-		serviceNames = append(serviceNames, stage1initcommon.ServiceUnitName(app.Name))
-	}
-	s1Root := common.Stage1RootfsPath(p.Root)
-	machineID := stage1initcommon.GetMachineID(p)
-	subcgroup, err := getContainerSubCgroup(machineID)
-	if err == nil {
-		if err := mountContainerCgroups(s1Root, enabledCgroups, subcgroup, serviceNames); err != nil {
-			fmt.Fprintf(os.Stderr, "Couldn't mount the container cgroups: %v\n", err)
+	// we didn't detect the unified cgroup hierarchy, let's fall back to
+	// mounting the host and container cgroups ourselves
+	if !unified {
+		if err := mountLegacyCgroups(p); err != nil {
+			log.Fatalf("Error mounting legacy cgroup hierarchy: %v", err)
 			return 5
 		}
-	} else {
-		fmt.Fprintf(os.Stderr, "Continuing with per-app isolators disabled: %v\n", err)
 	}
 
 	if err = stage1common.WritePpid(os.Getpid()); err != nil {
@@ -624,6 +593,53 @@ func stage1() int {
 	}
 
 	return 0
+}
+
+func mountLegacyCgroups(p *stage1commontypes.Pod) error {
+	// create a separate mount namespace so the cgroup filesystems
+	// are unmounted when exiting the pod
+	if err := syscall.Unshare(syscall.CLONE_NEWNS); err != nil {
+		return fmt.Errorf("error unsharing: %v", err)
+	}
+
+	// we recursively make / a "shared and slave" so mount events from the
+	// new namespace don't propagate to the host namespace but mount events
+	// from the host propagate to the new namespace and are forwarded to
+	// its peer group
+	// See https://www.kernel.org/doc/Documentation/filesystems/sharedsubtree.txt
+	if err := syscall.Mount("", "/", "none", syscall.MS_REC|syscall.MS_SLAVE, ""); err != nil {
+		return fmt.Errorf("error making / a slave mount: %v", err)
+	}
+	if err := syscall.Mount("", "/", "none", syscall.MS_REC|syscall.MS_SHARED, ""); err != nil {
+		return fmt.Errorf("error making / a shared and slave mount: %v", err)
+	}
+
+	enabledCgroups, err := cgroup.GetEnabledCgroups()
+	if err != nil {
+		return fmt.Errorf("Error getting cgroups: %v", err)
+	}
+
+	// mount host cgroups in the rkt mount namespace
+	if err := mountHostCgroups(enabledCgroups); err != nil {
+		return fmt.Errorf("couldn't mount the host cgroups: %v\n", err)
+	}
+
+	var serviceNames []string
+	for _, app := range p.Manifest.Apps {
+		serviceNames = append(serviceNames, stage1initcommon.ServiceUnitName(app.Name))
+	}
+	s1Root := common.Stage1RootfsPath(p.Root)
+	machineID := stage1initcommon.GetMachineID(p)
+	subcgroup, err := getContainerSubCgroup(machineID)
+	if err == nil {
+		if err := mountContainerCgroups(s1Root, enabledCgroups, subcgroup, serviceNames); err != nil {
+			return fmt.Errorf("couldn't mount the container cgroups: %v\n", err)
+		}
+	} else {
+		fmt.Fprintf(os.Stderr, "Continuing with per-app isolators disabled: %v\n", err)
+	}
+
+	return nil
 }
 
 func areHostCgroupsMounted(enabledCgroups map[int][]string) bool {

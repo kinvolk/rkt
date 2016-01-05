@@ -33,6 +33,12 @@ import (
 
 type addIsolatorFunc func(opts []*unit.UnitOption, limit *resource.Quantity) ([]*unit.UnitOption, error)
 
+const (
+	CgroupSuperMagic  = 0x27e0eb
+	Cgroup2SuperMagic = 0x63677270
+	TmpfsMagic        = 0x01021994
+)
+
 var (
 	isolatorFuncs = map[string]addIsolatorFunc{
 		"cpu":    addCpuLimit,
@@ -120,6 +126,25 @@ func parseCgroups(f io.Reader) (map[int][]string, error) {
 	}
 
 	return cgroups, nil
+}
+
+func IsUnified() (bool, error) {
+	cgPath := "/sys/fs/cgroup/"
+	sfs := &syscall.Statfs_t{}
+	if err := syscall.Statfs(cgPath, sfs); err != nil {
+		return false, fmt.Errorf("error calling statfs on %q: %v", cgPath, err)
+	}
+
+	switch sfs.Type {
+	case CgroupSuperMagic:
+		fallthrough
+	case Cgroup2SuperMagic:
+		return true, nil
+	case TmpfsMagic:
+		return false, nil
+	}
+
+	return false, fmt.Errorf("bad fs type")
 }
 
 // GetEnabledCgroups returns a map with the enabled cgroup controllers grouped by
