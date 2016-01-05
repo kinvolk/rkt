@@ -159,19 +159,18 @@ func evaluateMounts(rfs string, app string, p *stage1commontypes.Pod) ([]flyMoun
 		}
 	}
 
-	// Gather host mounts which we make MS_SHARED if passed as a volume source
+	// Gather host mounts
 	hostMounts, err := getHostMounts()
 	if err != nil {
 		return nil, fmt.Errorf("can't gather host mounts: %v", err)
 	}
 
 	argFlyMounts := []flyMount{}
-	var flags uintptr = syscall.MS_BIND // TODO: allow optional | syscall.MS_REC
+	var flags uintptr = syscall.MS_BIND
 	for _, tuple := range namedVolumeMounts {
 		if _, isHostMount := hostMounts[tuple.V.Source]; isHostMount {
-			// Mark the host mount as SHARED so the container's changes to the mount are propagated to the host
 			argFlyMounts = append(argFlyMounts,
-				flyMount{"", "", tuple.V.Source, "none", syscall.MS_REC | syscall.MS_SHARED},
+				flyMount{"", "", tuple.V.Source, "none", syscall.MS_REC | syscall.MS_SLAVE},
 			)
 		}
 		argFlyMounts = append(argFlyMounts,
@@ -231,13 +230,13 @@ func stage1() int {
 
 	effectiveMounts := append(
 		[]flyMount{
-			{"", "", "/dev", "none", syscall.MS_REC | syscall.MS_SHARED},
+			{"", "", "/dev", "none", syscall.MS_REC}, //
 			{"/dev", rfs, "/dev", "none", syscall.MS_BIND | syscall.MS_REC},
 
-			{"", "", "/proc", "none", syscall.MS_REC | syscall.MS_SHARED},
+			{"", "", "/proc", "none", syscall.MS_REC},
 			{"/proc", rfs, "/proc", "none", syscall.MS_BIND | syscall.MS_REC},
 
-			{"", "", "/sys", "none", syscall.MS_REC | syscall.MS_SHARED},
+			{"", "", "/sys", "none", syscall.MS_REC},
 			{"/sys", rfs, "/sys", "none", syscall.MS_BIND | syscall.MS_REC},
 
 			{"tmpfs", rfs, "/tmp", "tmpfs", 0},

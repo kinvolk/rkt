@@ -160,18 +160,6 @@ func getMountsForPrefix(path string, mi io.Reader) (mounts, error) {
 	return podMounts, nil
 }
 
-func needsRemountPrivate(mnt *mount) bool {
-	for _, key := range []string{
-		"shared",
-		"master",
-	} {
-		if _, needsRemount := mnt.opt[key]; needsRemount {
-			return true
-		}
-	}
-	return false
-}
-
 // MountGC removes mounts from pods that couldn't be GCed cleanly.
 func MountGC(path, uuid string) error {
 	mi, err := os.Open("/proc/self/mountinfo")
@@ -183,15 +171,6 @@ func MountGC(path, uuid string) error {
 	mnts, err := getMountsForPrefix(path, mi)
 	if err != nil {
 		return fmt.Errorf("error getting mounts for pod %s from mountinfo: %v", uuid, err)
-	}
-
-	for i := len(mnts) - 1; i >= 0; i -= 1 {
-		mnt := mnts[i]
-		if needsRemountPrivate(mnt) {
-			if err := syscall.Mount("", mnt.mountPoint, "", syscall.MS_PRIVATE, ""); err != nil {
-				return fmt.Errorf("could not remount at %v: %v", mnt.mountPoint, err)
-			}
-		}
 	}
 
 	for _, mnt := range mnts {
