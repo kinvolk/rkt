@@ -10,6 +10,7 @@ _S1_SS_SUBDIRS_ := \
 	gc \
 	reaper \
 	stop \
+	stop_kvm \
 	units \
 	aci
 
