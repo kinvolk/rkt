@@ -9,6 +9,7 @@ _S1_SS_SUBDIRS_ := \
 	init \
 	gc \
 	reaper \
+	stop \
 	units \
 	aci
 
