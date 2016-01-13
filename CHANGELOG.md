@@ -1,6 +1,6 @@
 ## v0.15.1
 
-The primary motivation for this release is to remove the dependency on libacl because that library is not in CoreOS ([revert of #1877](https://github.com/coreos/rkt/pull/1877)).
+The primary motivation for this release is to remove the dependency on libacl for now because that library is not in CoreOS ([#1965](https://github.com/coreos/rkt/pull/1965), [revert of #1877](https://github.com/coreos/rkt/pull/1877)).
 This release also ensure that TODO.
 
 #### New features and UX changes
