@@ -17,13 +17,19 @@ FTST_SS1_ENTER_BINARY := $(FTST_SS1_ACIROOTFSDIR)/enter
 # gc binary in rootfs
 FTST_SS1_GC_BINARY := $(FTST_SS1_ACIROOTFSDIR)/gc
 # special directories for stage1
-FTST_SS1_RESERVED_DIRS := $(foreach d,opt/stage1 rkt/env rkt/status,$(FTST_SS1_ACIROOTFSDIR)/$d)
+FTST_SS1_RESERVED_DIRS := opt/stage1 rkt/env rkt/status
+# special directories for stage1 in rootfs
+FTST_SS1_RESERVED_DIRS_IN_ROOTFS := $(foreach d,opt/stage1 rkt/env rkt/status,$(FTST_SS1_ACIROOTFSDIR)/$d)
+# chains of special directories for stage1 in rootfs
+FTST_SS1_RESERVED_DIR_CHAINS := \
+	$(foreach d,$(FTST_SS1_RESERVED_DIRS), \
+		$(call dir-chain,$(FTST_SS1_ACIROOTFSDIR),$d))
 
 INSTALL_FILES += $(FTST_SS1_MANIFEST_SRC):$(FTST_SS1_MANIFEST):0644
 INSTALL_DIRS += \
 	$(FTST_SS1_ACIDIR):- \
 	$(FTST_SS1_ACIROOTFSDIR):- \
-	$(foreach d,$(FTST_SS1_RESERVED_DIRS),$d:-)
+	$(foreach d,$(FTST_SS1_RESERVED_DIR_CHAINS),$d:-)
 CLEAN_FILES += \
 	$(FTST_SS1_IMAGE) \
 	$(FTST_SS1_RUN_BINARY) \
@@ -34,7 +40,7 @@ $(call generate-stamp-rule,$(FTST_SS1_STAMP),$(FTST_SS1_IMAGE))
 
 $(call forward-vars,$(FTST_SS1_IMAGE), \
 	FTST_SS1_ACIDIR)
-$(FTST_SS1_IMAGE): $(FTST_SS1_MANIFEST) $(FTST_SS1_RUN_BINARY) $(FTST_SS1_ENTER_BINARY) $(FTST_SS1_GC_BINARY) $(ACTOOL_STAMP) | $(FTST_SS1_ACIDIR) $(FTST_SS1_RESERVED_DIRS)
+$(FTST_SS1_IMAGE): $(FTST_SS1_MANIFEST) $(FTST_SS1_RUN_BINARY) $(FTST_SS1_ENTER_BINARY) $(FTST_SS1_GC_BINARY) $(ACTOOL_STAMP) | $(FTST_SS1_ACIDIR) $(FTST_SS1_RESERVED_DIRS_IN_ROOTFS)
 	$(VQ) \
 	$(call vb,vt,ACTOOL,$(call vsp,$@)) \
 	"$(ACTOOL)" build --overwrite "$(FTST_SS1_ACIDIR)" "$@"
