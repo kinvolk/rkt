@@ -17,24 +17,49 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
-	"path/filepath"
 	"syscall"
 )
 
+var (
+	force bool
+)
+
+func init() {
+	flag.BoolVar(&force, "force", false, "Forced stop")
+}
+
+func readIntFromFile(path string) (i int, err error) {
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		return
+	}
+	_, err = fmt.Sscanf(string(b), "%d", &i)
+	return
+}
+
 const lkvmBinPath string = "stage1/rootfs/lkvm"
 
-func stop() int {
-	pwd, err := os.Getwd()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error getting current directory: %v", err)
-		return 1
+func stop(podUUID string, force bool) int {
+	if force {
+		pid, err := readIntFromFile("ppid")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error reading pid: %v\n", err)
+			return 1
+		}
+
+		if err := syscall.Kill(pid, syscall.SIGKILL); err != nil {
+			fmt.Fprintf(os.Stderr, "error sending %v: %v\n", syscall.SIGKILL, err)
+			return 1
+		}
+
+		return 0
 	}
 
-	podUUID := filepath.Base(pwd)
 	lkvmName := "rkt-" + podUUID
-
 	args := []string{lkvmBinPath, "stop", "-n", lkvmName}
 
 	if err := syscall.Exec(args[0], args, os.Environ()); err != nil {
@@ -46,5 +71,7 @@ func stop() int {
 }
 
 func main() {
-	os.Exit(stop())
+	flag.Parse()
+
+	os.Exit(stop(flag.Arg(0), force))
 }

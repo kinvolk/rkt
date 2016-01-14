@@ -23,9 +23,11 @@ import (
 	"path/filepath"
 
 	"github.com/coreos/rkt/common"
+
+	"github.com/appc/spec/schema/types"
 )
 
-func StopPod(dir string) error {
+func StopPod(dir string, force bool, uuid *types.UUID) error {
 	s1v, err := getStage1InterfaceVersion(dir)
 	if err != nil {
 		return fmt.Errorf("error determining stage1 interface version: %v", err)
@@ -47,6 +49,12 @@ func StopPod(dir string) error {
 	}
 	args := []string{filepath.Join(s1rootfs, ep)}
 	debug("Execing %s", ep)
+
+	if force {
+		args = append(args, "--force")
+	}
+
+	args = append(args, uuid.String())
 
 	c := exec.Cmd{
 		Path:   args[0],
