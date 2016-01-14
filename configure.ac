@@ -377,7 +377,7 @@ AS_CASE([${RKT_STAGE1_SETUP_KIND}],
                   dnl and version are already specified, warn if
                   dnl default location was not specified
                   [AS_VAR_IF([RKT_STAGE1_DEFAULT_LOCATION],[],
-                             [AC_MSG_WARN([* It may be necessary to pass --stage1-image-{url,path,spec} flag to run rkt])])],
+                             [AC_MSG_WARN([* It may be necessary to pass --stage1-image-{url,path,name,hash,from-dir} flag to run rkt])])],
         [flavor],
                   dnl flavor setup - set the default name and version,
                   dnl set the location if not specified
