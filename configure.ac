@@ -344,16 +344,40 @@ RKT_IF_HAS_FLAVOR([${RKT_STAGE1_FLAVORS}],[coreos,kvm],
                              [AC_MSG_WARN([* --with-coreos-local-pxe-image-systemd-version is ignored by ${RKT_STAGE1_DEFAULT_FLAVOR} stage1 flavor])
                               RKT_LOCAL_COREOS_PXE_IMAGE_SYSTEMD_VER=''])])
 
-## Setup default name, version and location, take version override into account for flavored setup
+## Setup default name, version, location and a filename in rkt dir,
+## take version override into account for flavored setup
+
+# This will be set to something like stage1-coreos.aci, so rkt will
+# know what to look for in the rkt directory if default stage1 image
+# location is empty.
+RKT_STAGE1_DEFAULT_IMAGE_FILENAME_IN_RKT_DIRECTORY=''
+
+dnl Validate a default stage1 image location - check whether the
+dnl location is either a URL with supported scheme (docker, https,
+dnl http or file) or an absolute path. If it is the latter, get a
+dnl filename which will be used by rkt to load the stage1 image file
+dnl from the same directory if the image in the default location is
+dnl absent.
+AS_CASE([${RKT_STAGE1_DEFAULT_LOCATION}],
+        [auto],
+                dnl no location passed at all, nix it
+                [RKT_STAGE1_DEFAULT_LOCATION=''],
+        [docker://|https://|http://|file://],
+                dnl alright, a probably valid URL
+                [:],
+        [/*],
+                dnl alright, an absolute path, let's get a filename
+                [RKT_STAGE1_DEFAULT_IMAGE_FILENAME_IN_RKT_DIRECTORY=`basename ${RKT_STAGE1_DEFAULT_LOCATION}`],
+        dnl wrong default stage1 image location
+        [AC_MSG_ERROR([*** Default stage1 image path is neither a valid URL (with docker://, https://, http:// or file:// scheme) nor an absolute path])])
 
 AS_CASE([${RKT_STAGE1_SETUP_KIND}],
         [detailed],
                   dnl detailed setup - not much to do, default name
                   dnl and version are already specified, warn if
                   dnl default location was not specified
-                  [AS_VAR_IF([RKT_STAGE1_DEFAULT_LOCATION],[auto],
-                             [RKT_STAGE1_DEFAULT_LOCATION=''])
-                   AC_MSG_WARN([* It may be necessary to pass --stage1-image flag to run rkt])],
+                  [AS_VAR_IF([RKT_STAGE1_DEFAULT_LOCATION],[],
+                             [AC_MSG_WARN([* It may be necessary to pass --stage1-image-{url,path,spec} flag to run rkt])])],
         [flavor],
                   dnl flavor setup - set the default name and version,
                   dnl set the location if not specified
@@ -366,8 +390,8 @@ AS_CASE([${RKT_STAGE1_SETUP_KIND}],
                    AS_VAR_IF([RKT_STAGE1_FLAVORS_VERSION_OVERRIDE], [],
                              [RKT_STAGE1_DEFAULT_VERSION="${RKT_VERSION}"],
                              [RKT_STAGE1_DEFAULT_VERSION="${RKT_STAGE1_FLAVORS_VERSION_OVERRIDE}"])
-                   AS_VAR_IF([RKT_STAGE1_DEFAULT_LOCATION],[auto],
-                             [RKT_STAGE1_DEFAULT_LOCATION="path/stage1-${RKT_STAGE1_DEFAULT_FLAVOR}.aci"])],
+                   AS_VAR_IF([RKT_STAGE1_DEFAULT_LOCATION],[],
+                             [RKT_STAGE1_DEFAULT_IMAGE_FILENAME_IN_RKT_DIRECTORY="stage1-${RKT_STAGE1_DEFAULT_FLAVOR}.aci"])],
         [AC_MSG_ERROR([*** Unknown setup kind, should not happen])])
 
 ## Functional tests
@@ -540,7 +564,8 @@ AS_IF([test "${GO_MAJOR}" -gt "${GO_BEST_MAJOR}" || test "${GO_MAJOR}" -eq "${GO
 
 RKT_STAGE1_DEFAULT_NAME_LDFLAGS=`RKT_XF main.defaultStage1Name "${RKT_STAGE1_DEFAULT_NAME}"`
 RKT_STAGE1_DEFAULT_VERSION_LDFLAGS=`RKT_XF main.defaultStage1Version "${RKT_STAGE1_DEFAULT_VERSION}"`
-RKT_STAGE1_DEFAULT_LOCATION_LDFLAGS=`RKT_XF main.defaultStage1Image "${RKT_STAGE1_DEFAULT_LOCATION}"`
+RKT_STAGE1_DEFAULT_LOCATION_LDFLAGS=`RKT_XF main.buildDefaultStage1ImageLoc "${RKT_STAGE1_DEFAULT_LOCATION}"`
+RKT_STAGE1_DEFAULT_IMAGE_FILENAME_LDFLAGS=`RKT_XF main.buildDefaultStage1ImageInRktDir "${RKT_STAGE1_DEFAULT_IMAGE_FILENAME_IN_RKT_DIRECTORY}"`
 RKT_STAGE1_DEFAULT_IMAGES_DIRECTORY_LDFLAGS=`RKT_XF main.buildDefaultStage1ImagesDir "${RKT_STAGE1_DEFAULT_IMAGES_DIR}"`
 RKT_VERSION_LDFLAGS=`RKT_XF github.com/coreos/rkt/version.Version "${RKT_VERSION}"`
 
@@ -572,6 +597,7 @@ AC_SUBST(GOARCH_FOR_BUILD)
 AC_SUBST(RKT_STAGE1_DEFAULT_NAME_LDFLAGS)
 AC_SUBST(RKT_STAGE1_DEFAULT_VERSION_LDFLAGS)
 AC_SUBST(RKT_STAGE1_DEFAULT_LOCATION_LDFLAGS)
+AC_SUBST(RKT_STAGE1_DEFAULT_IMAGE_FILENAME_LDFLAGS)
 AC_SUBST(RKT_STAGE1_DEFAULT_IMAGES_DIRECTORY_LDFLAGS)
 AC_SUBST(RKT_VERSION_LDFLAGS)
 
