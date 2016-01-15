@@ -21,7 +21,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"path/filepath"
 	"strings"
 )
@@ -64,6 +63,7 @@ type serverHandler struct {
 	msg          chan<- string
 	fileSet      map[string]string
 	servedImages map[string]struct{}
+	serverURL    string
 }
 
 func (h *serverHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -167,25 +167,16 @@ func (h *serverHandler) handleRequest(w http.ResponseWriter, r *http.Request) {
 	path := filepath.Base(r.URL.Path)
 	switch path {
 	case "/":
-		h.sendAcDiscovery(w, getServerURL(r.URL))
+		h.sendAcDiscovery(w)
 	default:
 		h.handleFile(w, path)
 	}
 }
 
-func getServerURL(u *url.URL) string {
-	serverURL := url.URL{
-		Scheme: u.Scheme,
-		User:   u.User,
-		Host:   u.Host,
-	}
-	return serverURL.String()
-}
-
-func (h *serverHandler) sendAcDiscovery(w http.ResponseWriter, serverURL string) {
+func (h *serverHandler) sendAcDiscovery(w http.ResponseWriter) {
 	// TODO(krnowak): When appc spec gets the discovery over
 	// custom port feature, possibly take it into account here
-	indexHTML := fmt.Sprintf(`<meta name="ac-discovery" content="localhost %s/{name}.{ext}">`, serverURL)
+	indexHTML := fmt.Sprintf(`<meta name="ac-discovery" content="localhost %s/{name}.{ext}">`, h.serverURL)
 	w.Write([]byte(indexHTML))
 	h.sendMsg("  done.")
 }
@@ -288,6 +279,7 @@ func NewServer(protocol ProtocolType, serverType ServerType, auth AuthType, msgC
 		panic("Woe is me!")
 	}
 	server.URL = server.http.URL
+	server.handler.serverURL = server.http.URL
 	host := server.http.Listener.Addr().String()
 	switch auth {
 	case AuthNone:
