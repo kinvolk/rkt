@@ -33,11 +33,14 @@ type Headerer interface {
 	Header() http.Header
 }
 
+// BasicCredentials holds typical credentials used for authentication
+// (user and password). Used for fetching docker images.
 type BasicCredentials struct {
 	User     string
 	Password string
 }
 
+// ConfigurablePaths holds various paths defined in the configuration.
 type ConfigurablePaths struct {
 	DataDir string
 }
