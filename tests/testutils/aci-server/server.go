@@ -159,11 +159,8 @@ func (h *serverHandler) handleRequest(w http.ResponseWriter, r *http.Request) {
 	switch path {
 	case "/":
 		h.sendAcDiscovery(w)
-		h.sendMsg("  done.")
 	default:
-		if found := h.handleFile(w, path); found {
-			h.sendMsg("  done.")
-		}
+		h.handleFile(w, path)
 	}
 }
 
@@ -172,23 +169,24 @@ func (h *serverHandler) sendAcDiscovery(w http.ResponseWriter) {
 	// custom port feature, possibly take it into account here
 	indexHTML := `<meta name="ac-discovery" content="localhost https://localhost/{name}.{ext}">`
 	w.Write([]byte(indexHTML))
+	h.sendMsg("  done.")
 }
 
-func (h *serverHandler) handleFile(w http.ResponseWriter, reqPath string) bool {
+func (h *serverHandler) handleFile(w http.ResponseWriter, reqPath string) {
 	path, ok := h.fileSet[reqPath]
 	if !ok {
 		w.WriteHeader(http.StatusNotFound)
 		h.sendMsg("  not found.")
-		return false
+		return
 	}
 	if !h.canServe(reqPath, w) {
-		return false
+		return
 	}
 	contents, err := ioutil.ReadFile(path)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		h.sendMsg("  not found, but specified in fileset; bug?")
-		return false
+		return
 	}
 	w.Write(contents)
 	reqImagePath, isAsc := isPathAnImageKey(reqPath)
@@ -197,7 +195,7 @@ func (h *serverHandler) handleFile(w http.ResponseWriter, reqPath string) bool {
 	} else {
 		h.servedImages[reqPath] = struct{}{}
 	}
-	return true
+	h.sendMsg("  done.")
 }
 
 func (h *serverHandler) canServe(reqPath string, w http.ResponseWriter) bool {
