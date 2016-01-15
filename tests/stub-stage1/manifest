@@ -1,7 +1,7 @@
 {
     "acKind": "ImageManifest",
     "acVersion": "0.7.4",
-    "name": "localhost/stub-stage1",
+    "name": "localhost/rkt-stub-stage1",
     "labels": [
         {
             "name": "version",
