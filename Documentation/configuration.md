@@ -270,9 +270,12 @@ The configuration files should be placed inside the `paths.d` subdirectory (e.g.
 
 ##### Description and examples
 
-This version of the `paths` configuration specifies one additional field: `data`.
+This version of the `paths` configuration specifies two additional fields: `data` and `stage1-images`.
 
 The `data` field is a string that defines where image data and running pods are stored.
+This field is optional.
+
+The `stage1-images` field is a string that defines where are the stage1 images are stored, so rkt can search for them when using the `--stage1-from-dir` flag.
 This field is optional.
 
 Example `paths` configuration:
@@ -284,6 +287,7 @@ Example `paths` configuration:
 	"rktKind": "paths",
 	"rktVersion": "v1",
 	"data": "/home/me/rkt/data",
+	"stage1-images": "/home/me/rkt/stage1-images"
 }
 ```
 
@@ -303,6 +307,7 @@ For example, given this system configuration:
 ```
 
 If only this configuration file is provided, then rkt will store images and pods in the `/opt/rkt-stuff/data` directory.
+Also, when user passes `--stage1-from-dir=stage1.aci` to rkt, rkt will search for this file in the directory specified at build time (usually `/usr/lib/rkt/stage1-images`).
 
 But with additional configuration provided in the local configuration directory, this can be overridden.
 For example, given the above system configuration and the following local configuration:
@@ -319,7 +324,23 @@ For example, given the above system configuration and the following local config
 
 Now rkt will store the images and pods in the `/home/me/rkt` directory.
 It will not know about any other data directory.
+Also, rkt will still search for the stage1 images in the directory specified at build time for the `--stage1-from-dir` flag.
+
+To override the stage1 images directory:
+
+`/etc/rkt/paths.d/stage1.json`:
+
+```json
+{
+	"rktKind": "paths",
+	"rktVersion": "v1",
+	"stage1-images": "/home/me/stage1-images",
+}
+```
+
+Now rkt will search in the `/home/me/stage1/images` directory, not in the directory specified at build time.
 
 ##### Command line flags
 
 The `data` field can be overridden with the `--dir` flag.
+The `stage1-images` cannot be overridden with the command line flag.
