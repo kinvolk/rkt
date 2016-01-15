@@ -50,7 +50,7 @@ func (e *httpError) Error() string {
 }
 
 type serverHandler struct {
-	serverType   ServerType
+	server       ServerType
 	auth         AuthType
 	msg          chan<- string
 	fileSet      map[string]string
@@ -199,7 +199,7 @@ func (h *serverHandler) handleFile(w http.ResponseWriter, reqPath string) {
 }
 
 func (h *serverHandler) canServe(reqPath string, w http.ResponseWriter) bool {
-	if h.serverType != ServerQuay {
+	if h.server != ServerQuay {
 		return true
 	}
 	reqImagePath, isAsc := isPathAnImageKey(reqPath)
@@ -253,7 +253,7 @@ func NewServer(serverType ServerType, auth AuthType, msgCapacity int) *Server {
 		handler: &serverHandler{
 			auth:         auth,
 			msg:          msg,
-			serverType:   serverType,
+			server:       serverType,
 			fileSet:      make(map[string]string),
 			servedImages: make(map[string]struct{}),
 		},
