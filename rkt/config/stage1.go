@@ -82,7 +82,10 @@ func (p *stage1V1JsonParser) validateStage1V1(stage1 *stage1V1) error {
 		if !filepath.IsAbs(stage1.Location) {
 			url, err := url.Parse(stage1.Location)
 			if err != nil {
-				return fmt.Errorf("default stage1 image location is neither an absolute path nor a valid URL: %v", err)
+				return fmt.Errorf("default stage1 image location is an invalid URL: %v", err)
+			}
+			if url.Scheme == "" {
+				return fmt.Errorf("default stage1 image location is either a relative path or a URL without scheme")
 			}
 			if _, ok := allowedSchemes[url.Scheme]; !ok {
 				schemes := toArray(allowedSchemes)
