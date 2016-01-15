@@ -156,7 +156,9 @@ func runAuthServer(t *testing.T, auth taas.AuthType) (*taas.Server, string) {
 	image := patchTestACI(authACIName, fmt.Sprintf("--exec=/inspect --print-msg='%s'", authSuccessfulDownload))
 	fileSet := make(map[string]string, 1)
 	fileSet[authACIName] = image
-	server.UpdateFileSet(fileSet)
+	if err := server.UpdateFileSet(fileSet); err != nil {
+		t.Fatalf("Failed to populate a file list in test aci server: %v", err)
+	}
 	return server, image
 }
 
