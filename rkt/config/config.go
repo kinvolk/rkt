@@ -114,7 +114,7 @@ func toSet(a []string) map[string]struct{} {
 }
 
 func toArray(s map[string]struct{}) []string {
-	a := make([]string, len(s))
+	a := make([]string, 0, len(s))
 	for k := range s {
 		a = append(a, k)
 	}
