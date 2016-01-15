@@ -75,6 +75,12 @@ AC_ARG_WITH(stage1-default-location,
             [RKT_STAGE1_DEFAULT_LOCATION="${withval}"],
             [RKT_STAGE1_DEFAULT_LOCATION=auto])
 
+AC_ARG_WITH(stage1-default-images-directory,
+            [AS_HELP_STRING([--with-stage1-default-images-directory],
+                            [default directory for stage1 images, default: LIBDIR/rkt/stage1-images])],
+            [RKT_STAGE1_DEFAULT_IMAGES_DIR="${withval}"],
+            [RKT_STAGE1_DEFAULT_IMAGES_DIR=auto])
+
 # STAGE1 - systemd src and version for src flavor
 
 AC_ARG_WITH([stage1-systemd-src],
@@ -168,6 +174,28 @@ AS_VAR_IF([RKT_STAGE1_FLAVORS_VERSION_OVERRIDE], [auto],
           dnl check if we override the version, even if we build no flavors at all
           [AS_VAR_IF([RKT_STAGE1_FLAVORS], [],
                      [AC_MSG_WARN([* overriding stage1 version, but no stage1 flavors are built])])])
+
+## Stage1 default image directory
+
+dnl Normally it is autoconf, which sets prefix and exec_prefix
+dnl variables to some default values if they were NONE, but that
+dnl happens way too late, so we need to do it ourselves right now.
+AS_VAR_IF([prefix],[NONE],
+          [prefix="${ac_default_prefix}"])
+AS_VAR_IF([exec_prefix],[NONE],
+          [exec_prefix="${prefix}"])
+AS_VAR_IF([RKT_STAGE1_DEFAULT_IMAGES_DIR],[auto],
+          dnl Calling eval makes sure that ${libdir} is expanded.
+          dnl autoconf defines it as '${eprefix}/lib' - note the
+          dnl single quotes, which make ${eprefix} to be not
+          dnl expanded. There is some rationale behind all this, but
+          dnl we need no features coming from unexpanded variables.
+          [eval RKT_STAGE1_DEFAULT_IMAGES_DIR="${libdir}/rkt/stage1-images"])
+AS_CASE([${RKT_STAGE1_DEFAULT_IMAGES_DIR}],
+        [/*],
+                dnl alright, the path is absolute
+                [:],
+        [AC_MSG_ERROR([*** path to the stage1 images directory must be absolute])])
 
 ## Built stage1 flavors verification
 
@@ -513,6 +541,7 @@ AS_IF([test "${GO_MAJOR}" -gt "${GO_BEST_MAJOR}" || test "${GO_MAJOR}" -eq "${GO
 RKT_STAGE1_DEFAULT_NAME_LDFLAGS=`RKT_XF main.defaultStage1Name "${RKT_STAGE1_DEFAULT_NAME}"`
 RKT_STAGE1_DEFAULT_VERSION_LDFLAGS=`RKT_XF main.defaultStage1Version "${RKT_STAGE1_DEFAULT_VERSION}"`
 RKT_STAGE1_DEFAULT_LOCATION_LDFLAGS=`RKT_XF main.defaultStage1Image "${RKT_STAGE1_DEFAULT_LOCATION}"`
+RKT_STAGE1_DEFAULT_IMAGES_DIRECTORY_LDFLAGS=`RKT_XF main.buildDefaultStage1ImagesDir "${RKT_STAGE1_DEFAULT_IMAGES_DIR}"`
 RKT_VERSION_LDFLAGS=`RKT_XF github.com/coreos/rkt/version.Version "${RKT_VERSION}"`
 
 #### SUBSTITUTIONS
@@ -528,6 +557,7 @@ AC_SUBST(RKT_STAGE1_FLAVORS)
 AC_SUBST(RKT_STAGE1_DEFAULT_FLAVOR)
 
 AC_SUBST(RKT_STAGE1_DEFAULT_LOCATION)
+AC_SUBST(RKT_STAGE1_DEFAULT_IMAGES_DIR)
 
 AC_SUBST(RKT_STAGE1_SYSTEMD_SRC)
 AC_SUBST(RKT_STAGE1_SYSTEMD_VER)
@@ -542,6 +572,7 @@ AC_SUBST(GOARCH_FOR_BUILD)
 AC_SUBST(RKT_STAGE1_DEFAULT_NAME_LDFLAGS)
 AC_SUBST(RKT_STAGE1_DEFAULT_VERSION_LDFLAGS)
 AC_SUBST(RKT_STAGE1_DEFAULT_LOCATION_LDFLAGS)
+AC_SUBST(RKT_STAGE1_DEFAULT_IMAGES_DIRECTORY_LDFLAGS)
 AC_SUBST(RKT_VERSION_LDFLAGS)
 
 #### FILE GENERATION AND REPORTING
@@ -555,7 +586,8 @@ AC_MSG_RESULT([
         stage1 setup
 
         type:                                   '${RKT_STAGE1_SETUP_KIND}'
-        default stage1 location:                '${RKT_STAGE1_DEFAULT_LOCATION}'])
+        default stage1 location:                '${RKT_STAGE1_DEFAULT_LOCATION}'
+        default stage1 images directory:        '${RKT_STAGE1_DEFAULT_IMAGES_DIR}'])
 
 AS_CASE([${RKT_STAGE1_SETUP_KIND}],
         [flavor],
