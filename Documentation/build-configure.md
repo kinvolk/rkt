@@ -79,6 +79,13 @@ Relative paths will be partially ignored - only the directory where rkt binary i
 In general, you will be best off by specifying an absolute path to the image file.
 This parameter is currently very shabby and will be reworked in the near future.
 
+#### `--with-stage1-default-images-directory`
+
+This parameter tells rkt where is the directory which contains all the stage1 images.
+The value should be an absolute path.
+In this directory, all the built flavors of stage1 images should be installed.
+The `--stage1-from-dir` rkt flag will look for images in this directory.
+
 ## Flavor-specific parameters
 
 There are some additional parameters for some flavors.
