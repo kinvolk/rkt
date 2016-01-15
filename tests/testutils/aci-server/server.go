@@ -318,7 +318,7 @@ func NewServer(setup *ServerSetup) *Server {
 			auth:         setup.Auth,
 			msg:          msg,
 			server:       setup.Server,
-			protocolType: setup.Protocol,
+			protocol:     setup.Protocol,
 			fileSet:      make(map[string]*servedFile),
 			servedImages: make(map[string]struct{}),
 		},
@@ -336,7 +336,7 @@ func NewServer(setup *ServerSetup) *Server {
 	server.URL = server.http.URL
 	server.handler.serverURL = server.http.URL
 	host := server.http.Listener.Addr().String()
-	switch auth {
+	switch setup.Auth {
 	case AuthNone:
 		// nothing to do
 	case AuthBasic:
