@@ -304,3 +304,151 @@ func (aml *appCPULimit) String() string {
 func (aml *appCPULimit) Type() string {
 	return "appCPULimit"
 }
+
+type appHashType apps.Apps
+
+func (aa *appHashType) IsBoolFlag() bool {
+	return true
+}
+
+func (aa *appHashType) Set(s string) error {
+	app := (*apps.Apps)(aa).Last()
+	if app == nil {
+		return fmt.Errorf("--is-hash must follow an image")
+	}
+	if app.ImType != apps.AppImageHash {
+		return fmt.Errorf("redundant --is-hash flag")
+	}
+	if app.ImType != apps.AppImageGuess {
+		return fmt.Errorf("--is-hash cannot be used together with --is-url, --is-path or --is-name")
+	}
+	app.ImType = apps.AppImageHash
+
+	return nil
+}
+
+func (aa *appHashType) String() string {
+	app := (*apps.Apps)(aa).Last()
+	if app == nil {
+		return ""
+	}
+	if app.ImType == apps.AppImageHash {
+		return "true"
+	}
+	return "false"
+}
+
+func (aa *appHashType) Type() string {
+	return "appHashType"
+}
+
+type appURLType apps.Apps
+
+func (aa *appURLType) IsBoolFlag() bool {
+	return true
+}
+
+func (aa *appURLType) Set(s string) error {
+	app := (*apps.Apps)(aa).Last()
+	if app == nil {
+		return fmt.Errorf("--is-url must follow an image")
+	}
+	if app.ImType != apps.AppImageURL {
+		return fmt.Errorf("redundant --is-url flag")
+	}
+	if app.ImType != apps.AppImageGuess {
+		return fmt.Errorf("--is-url cannot be used together with --is-hash, --is-path or --is-name")
+	}
+	app.ImType = apps.AppImageURL
+
+	return nil
+}
+
+func (aa *appURLType) String() string {
+	app := (*apps.Apps)(aa).Last()
+	if app == nil {
+		return ""
+	}
+	if app.ImType == apps.AppImageURL {
+		return "true"
+	}
+	return "false"
+}
+
+func (aa *appURLType) Type() string {
+	return "appURLType"
+}
+
+type appPathType apps.Apps
+
+func (aa *appPathType) IsBoolFlag() bool {
+	return true
+}
+
+func (aa *appPathType) Set(s string) error {
+	app := (*apps.Apps)(aa).Last()
+	if app == nil {
+		return fmt.Errorf("--is-path must follow an image")
+	}
+	if app.ImType != apps.AppImagePath {
+		return fmt.Errorf("redundant --is-path flag")
+	}
+	if app.ImType != apps.AppImageGuess {
+		return fmt.Errorf("--is-path cannot be used together with --is-hash, --is-url or --is-name")
+	}
+	app.ImType = apps.AppImagePath
+
+	return nil
+}
+
+func (aa *appPathType) String() string {
+	app := (*apps.Apps)(aa).Last()
+	if app == nil {
+		return ""
+	}
+	if app.ImType == apps.AppImagePath {
+		return "true"
+	}
+	return "false"
+}
+
+func (aa *appPathType) Type() string {
+	return "appPathType"
+}
+
+type appNameType apps.Apps
+
+func (aa *appNameType) IsBoolFlag() bool {
+	return true
+}
+
+func (aa *appNameType) Set(s string) error {
+	app := (*apps.Apps)(aa).Last()
+	if app == nil {
+		return fmt.Errorf("--is-name must follow an image")
+	}
+	if app.ImType != apps.AppImageName {
+		return fmt.Errorf("redundant --is-name flag")
+	}
+	if app.ImType != apps.AppImageGuess {
+		return fmt.Errorf("--is-name cannot be used together with --is-hash, --is-url or --is-path")
+	}
+	app.ImType = apps.AppImageName
+
+	return nil
+}
+
+func (aa *appNameType) String() string {
+	app := (*apps.Apps)(aa).Last()
+	if app == nil {
+		return ""
+	}
+	if app.ImType == apps.AppImageName {
+		return "true"
+	}
+	return "false"
+}
+
+func (aa *appNameType) Type() string {
+	return "appNameType"
+}
