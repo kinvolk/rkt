@@ -17,31 +17,38 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
+
+	baseconfig "github.com/coreos/rkt/pkg/config"
 )
 
-type configurablePathsV1 struct {
+type pathsV1 struct {
 	Data string `json:"data"`
 }
 
-func init() {
-	addParser("paths", "v1", &configurablePathsV1{})
-	// Look in 'paths.d' subdir for configs of type paths
-	registerSubDir("paths.d", []string{"paths"})
-}
-
-func (p *configurablePathsV1) parse(config *Config, raw []byte) error {
-	var dirs configurablePathsV1
-	if err := json.Unmarshal(raw, &dirs); err != nil {
+func (p *pathsV1JsonParser) Parse(idx *baseconfig.PathIndex, raw []byte) error {
+	var paths pathsV1
+	if err := json.Unmarshal(raw, &paths); err != nil {
 		return err
 	}
-	if dirs.Data != "" {
+	config := p.getConfig(idx.Index)
+	if paths.Data != "" {
 		if config.Paths.DataDir != "" {
-			// A clash has occurred. Data dir has been defined more than once in
-			// the same directory
 			return fmt.Errorf("data directory is already specified")
 		}
-		config.Paths.DataDir = dirs.Data
+		if !filepath.IsAbs(paths.Data) {
+			return fmt.Errorf("data directory must be an absolute path")
+		}
+		config.Paths.DataDir = paths.Data
 	}
 
 	return nil
+}
+
+func (p *pathsV1JsonParser) propagateConfig(config *Config) {
+	for _, subconfig := range p.configs {
+		if subconfig.Paths.DataDir != "" {
+			config.Paths.DataDir = subconfig.Paths.DataDir
+		}
+	}
 }
