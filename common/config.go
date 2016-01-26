@@ -21,6 +21,12 @@ import (
 	"github.com/coreos/rkt/pkg/config"
 )
 
+const (
+	// configuration directory base names
+	Stage0CDBN = "cfg"
+	Stage1CDBN = "stage1-cfg"
+)
+
 func NewConfigDirectory(cdbn string) *config.Directory {
 	return config.NewDirectory(cdbn, &rktJSON{})
 }

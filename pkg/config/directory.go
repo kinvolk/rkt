@@ -170,11 +170,17 @@ type SubdirSetup struct {
 	Kinds  []string
 }
 
-// PathIndex wraps the configuration directory and its index in the list of passed
-// toplevel paths to WalkDirectory.
+// PathIndex wraps the configuration directory and its index in the
+// list of passed toplevel paths to WalkDirectory. It also provides
+// additional data like subdirectory and the filename of a parsed
+// file. Note that Index is tied only with Path, so Parser can get
+// different instances of PathIndex with the same Index and Path
+// fields, but the different Subdirectory and Filename fields.
 type PathIndex struct {
-	Path  string
-	Index int
+	Index        int
+	Path         string
+	Subdirectory string
+	Filename     string
 }
 
 // Directory wraps a configuration directory. A configuration
@@ -321,7 +327,7 @@ type subdirectory struct {
 func (d *Directory) getConfigWalker(idx *PathIndex, kinds []string, root string) filepath.WalkFunc {
 	sd := &subdirectory{
 		parent: d,
-		idx:    idx,
+		idx:    idx.copyWithSubdir(root),
 		kinds:  kinds,
 	}
 	return func(path string, info os.FileInfo, err error) error {
@@ -332,6 +338,14 @@ func (d *Directory) getConfigWalker(idx *PathIndex, kinds []string, root string)
 			return nil
 		}
 		return sd.readFile(info, path)
+	}
+}
+
+func (idx *PathIndex) copyWithSubdir(path string) {
+	return &PathIndex{
+		Index:        idx.Index,
+		Path:         idx.Path,
+		Subdirectory: filepath.BaseName(path),
 	}
 }
 
@@ -390,10 +404,19 @@ func (sd *subdirectory) parseConfigFile(path string) error {
 	if err != nil {
 		return err
 	}
-	if err := parser.Parse(sd.idx, raw); err != nil {
+	if err := parser.Parse(sd.idx.copyWithFilename(path), raw); err != nil {
 		return fmt.Errorf("failed to parse %q: %v", path, err)
 	}
 	return nil
+}
+
+func (idx *PathIndex) copyWithFilename(path string) {
+	return &PathIndex{
+		Index:        idx.Index,
+		Path:         idx.Path,
+		Subdirectory: idx.Subdirectory,
+		Filename:     filepath.BaseName(path),
+	}
 }
 
 func (d *Directory) getParser(kind, version string) (Parser, error) {

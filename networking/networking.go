@@ -51,19 +51,15 @@ type Networking struct {
 	nets   []activeNet
 }
 
-// NetConf local struct extends cnitypes.NetConf with information about masquerading
-// similar to CNI plugins
-type NetConf struct {
-	cnitypes.NetConf
-	IPMasq bool `json:"ipMasq"`
-	MTU    int  `json:"mtu"`
-}
-
 // Setup creates a new networking namespace and executes network plugins to
 // set up networking. It returns in the new pod namespace
 func Setup(podRoot string, podID types.UUID, fps []ForwardedPort, netList common.NetList, localConfig, flavor string) (*Networking, error) {
+	config, err := config.GetConfigFrom(localConfig)
+	if err != nil {
+		return nil, err
+	}
 	if flavor == "kvm" {
-		return kvmSetup(podRoot, podID, fps, netList, localConfig)
+		return kvmSetup(podRoot, podID, fps, netList, config)
 	}
 
 	// TODO(jonboulle): currently podRoot is _always_ ".", and behaviour in other
@@ -73,7 +69,7 @@ func Setup(podRoot string, podID types.UUID, fps []ForwardedPort, netList common
 			podRoot:      podRoot,
 			podID:        podID,
 			netsLoadList: netList,
-			localConfig:  localConfig,
+			config:       config,
 		},
 	}
 

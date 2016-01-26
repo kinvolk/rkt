@@ -29,6 +29,7 @@ import (
 	"github.com/appc/spec/schema/types"
 
 	"github.com/coreos/rkt/common"
+	"github.com/coreos/rkt/networking/config"
 	"github.com/coreos/rkt/networking/netinfo"
 )
 
@@ -48,7 +49,7 @@ type podEnv struct {
 	podRoot      string
 	podID        types.UUID
 	netsLoadList common.NetList
-	localConfig  string
+	config       *config.Config
 }
 
 type activeNet struct {
@@ -59,7 +60,7 @@ type activeNet struct {
 
 // Loads nets specified by user and default one from stage1
 func (e *podEnv) loadNets() ([]activeNet, error) {
-	nets, err := loadUserNets(e.localConfig, e.netsLoadList)
+	nets, err := loadUserNets(e.config, e.netsLoadList)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +222,7 @@ func copyFileToDir(src, dstdir string) (string, error) {
 	return dst, err
 }
 
-func loadUserNets(localConfig string, netsLoadList common.NetList) ([]activeNet, error) {
+func loadUserNets(config *config.Config, netsLoadList common.NetList) ([]activeNet, error) {
 	if netsLoadList.None() {
 		log.Printf("Networking namespace with loopback only")
 		return nil, nil
@@ -237,13 +238,7 @@ func loadUserNets(localConfig string, netsLoadList common.NetList) ([]activeNet,
 	sort.Strings(files)
 	nets := make([]activeNet, 0, len(files))
 
-	for _, filename := range files {
-		filepath := filepath.Join(userNetPath, filename)
-
-		if !strings.HasSuffix(filepath, ".conf") {
-			continue
-		}
-
+	for filepath, contents := range config.CniConfigs
 		n, err := loadNet(filepath)
 		if err != nil {
 			return nil, err
