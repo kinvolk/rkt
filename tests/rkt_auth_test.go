@@ -22,6 +22,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/coreos/rkt/rkt/config"
 	"github.com/coreos/rkt/tests/testutils"
 	taas "github.com/coreos/rkt/tests/testutils/aci-server"
 )
@@ -201,7 +202,7 @@ func writeConfig(t *testing.T, baseDir, filename, contents string) {
 }
 
 func authDir(confDir string) string {
-	return filepath.Join(confDir, "auth.d")
+	return filepath.Join(confDir, config.ConfigurationDirectoryBaseName, "auth.d")
 }
 
 func getInvalidOAuthConfig(conf string) string {
