@@ -74,8 +74,13 @@ func (p *parserBase) getConfig(idx int) *Config {
 	return p.configs[idx]
 }
 
+func (p *parserBase) visited() bool {
+	return len(p.configs) > 0
+}
+
 type configPropagator interface {
 	propagateConfig(config *Config)
+	visited() bool
 }
 
 // the parsers below implement both baseconfig.Parser and

@@ -393,6 +393,70 @@ func TestStage1ConfigMerge(t *testing.T) {
 	}
 }
 
+func TestPreferNewConfigToOld(t *testing.T) {
+	tmp := getTmpDir(t, "rkt-backward-compat-config")
+	defer os.RemoveAll(tmp)
+	top := getTopdir(tmp, 0)
+	cfgDir := filepath.Join(top, common.Stage0CDB)
+	files := []*cfgFile{
+		{
+			directory: filepath.Join(cfgDir, "stage1.d"),
+			filename:  "coreos.json",
+			contents:  `{"rktKind": "stage1", "rktVersion": "v1", "name": "coreos.com/rkt/stage1-better", "version": "1.2.3", "location": "https://coreos.com/some/url/better.aci"}`,
+		},
+		{
+			directory: filepath.Join(top, "paths.d"),
+			filename:  "coreos.json",
+			contents:  `{"rktKind": "paths", "rktVersion": "v1", "data": "/abs/path", "stage1-images": "/abs/path2"}`,
+		},
+	}
+	expectedStage1 := Stage1Data{
+		Name:     "coreos.com/rkt/stage1-better",
+		Version:  "1.2.3",
+		Location: "https://coreos.com/some/url/better.aci",
+	}
+	expectedPaths := ConfigurablePaths{}
+	cfg, err := getConfigFromContents(t, []string{top}, files...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotStage1 := cfg.Stage1
+	if !reflect.DeepEqual(expectedStage1, gotStage1) {
+		t.Errorf("expected stage1:\n%#v\ngot:\n%#v", expectedStage1, gotStage1)
+	}
+	gotPaths := cfg.Paths
+	if !reflect.DeepEqual(expectedPaths, gotPaths) {
+		t.Errorf("expected paths:\n%#v\ngot:\n%#v", expectedPaths, gotPaths)
+	}
+}
+
+func TestNewConfigDirectory(t *testing.T) {
+	tmp := getTmpDir(t, "rkt-new-config-directory")
+	defer os.RemoveAll(tmp)
+	top := getTopdir(tmp, 0)
+	cfgDir := filepath.Join(top, common.Stage0CDB)
+	files := []*cfgFile{
+		{
+			directory: filepath.Join(cfgDir, "stage1.d"),
+			filename:  "coreos.json",
+			contents:  `{"rktKind": "stage1", "rktVersion": "v1", "name": "coreos.com/rkt/stage1-better", "version": "1.2.3", "location": "https://coreos.com/some/url/better.aci"}`,
+		},
+	}
+	expectedStage1 := Stage1Data{
+		Name:     "coreos.com/rkt/stage1-better",
+		Version:  "1.2.3",
+		Location: "https://coreos.com/some/url/better.aci",
+	}
+	cfg, err := getConfigFromContents(t, []string{top}, files...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotStage1 := cfg.Stage1
+	if !reflect.DeepEqual(expectedStage1, gotStage1) {
+		t.Errorf("expected stage1:\n%#v\ngot:\n%#v", expectedStage1, gotStage1)
+	}
+}
+
 func getTmpDir(t *testing.T, prefix string) string {
 	tmp, err := ioutil.TempDir("", prefix)
 	if err != nil {

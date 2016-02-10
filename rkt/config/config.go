@@ -24,7 +24,15 @@ import (
 )
 
 type configSetup struct {
-	directory   *baseconfig.Directory
+	oldDirectory   *baseconfig.Directory
+	oldPropagators []configPropagator
+
+	newDirectory   *baseconfig.Directory
+	newPropagators []configPropagator
+
+	// propagators will be set to either newPropagators or
+	// oldPropagators when we will know which of newDirectory or
+	// oldDirectory was used
 	propagators []configPropagator
 }
 
@@ -141,7 +149,7 @@ func GetConfigFrom(dirs ...string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := setup.directory.WalkDirectories(dirs...); err != nil {
+	if err := setup.walkDirectories(dirs...); err != nil {
 		return nil, err
 	}
 	cfg := newConfig()
@@ -150,7 +158,82 @@ func GetConfigFrom(dirs ...string) (*Config, error) {
 }
 
 func getConfigSetup() (*configSetup, error) {
-	d := common.NewConfigDirectory(common.DeprecatedCDB)
+	oldDir, oldProps, err := getOldSetup()
+	if err != nil {
+		return nil, err
+	}
+	newDir, newProps, err := getNewSetup()
+	if err != nil {
+		return nil, err
+	}
+	setup := &configSetup{
+		oldDirectory:   oldDir,
+		oldPropagators: oldProps,
+
+		newDirectory:   newDir,
+		newPropagators: newProps,
+	}
+	return setup, nil
+}
+
+type commonSetup struct {
+	authV1       *authV1JsonParser
+	dockerAuthV1 *dockerAuthV1JsonParser
+	pathsV1      *pathsV1JsonParser
+	stage1V1     *stage1V1JsonParser
+
+	baseParsers []*baseconfig.ParserSetup
+	baseSubdirs []*baseconfig.SubdirSetup
+}
+
+// this function should be considered frozen
+func getOldSetup() (*baseconfig.Directory, []configPropagator, error) {
+	dir := common.NewConfigDirectory(common.DeprecatedCDB)
+	setup := getCommonSetup()
+	if err := dir.RegisterParsers(setup.baseParsers); err != nil {
+		return nil, nil, err
+	}
+	if err := dir.RegisterSubdirectories(setup.baseSubdirs); err != nil {
+		return nil, nil, err
+	}
+	props := []configPropagator{
+		setup.authV1,
+		setup.dockerAuthV1,
+		setup.pathsV1,
+		setup.stage1V1,
+	}
+	return dir, props, nil
+}
+
+func getNewSetup() (*baseconfig.Directory, []configPropagator, error) {
+	dir := common.NewConfigDirectory(common.Stage0CDB)
+	setup := getCommonSetup()
+	additionalParsers := []*baseconfig.ParserSetup{
+	// add new parsers here
+	}
+	additionalSubdirs := []*baseconfig.SubdirSetup{
+	// add new subdirs here
+	}
+	setup.baseParsers = append(setup.baseParsers, additionalParsers...)
+	setup.baseSubdirs = append(setup.baseSubdirs, additionalSubdirs...)
+	if err := dir.RegisterParsers(setup.baseParsers); err != nil {
+		return nil, nil, err
+	}
+	if err := dir.RegisterSubdirectories(setup.baseSubdirs); err != nil {
+		return nil, nil, err
+	}
+	props := []configPropagator{
+		setup.authV1,
+		setup.dockerAuthV1,
+		setup.pathsV1,
+		setup.stage1V1,
+		// add new propagators here
+	}
+	return dir, props, nil
+}
+
+// this function should be considered frozen
+func getCommonSetup() *commonSetup {
 	authV1 := &authV1JsonParser{}
 	dockerAuthV1 := &dockerAuthV1JsonParser{}
 	pathsV1 := &pathsV1JsonParser{}
@@ -191,22 +274,29 @@ func getConfigSetup() (*configSetup, error) {
 			Kinds:  []string{"stage1"},
 		},
 	}
-	if err := d.RegisterParsers(parsers); err != nil {
-		return nil, err
+	return &commonSetup{
+		authV1:       authV1,
+		dockerAuthV1: dockerAuthV1,
+		pathsV1:      pathsV1,
+		stage1V1:     stage1V1,
+
+		baseParsers: parsers,
+		baseSubdirs: subdirs,
 	}
-	if err := d.RegisterSubdirectories(subdirs); err != nil {
-		return nil, err
+}
+
+func (s *configSetup) walkDirectories(dirs ...string) error {
+	if err := s.newDirectory.WalkDirectories(dirs...); err != nil {
+		return err
 	}
-	setup := &configSetup{
-		directory: d,
-		propagators: []configPropagator{
-			authV1,
-			dockerAuthV1,
-			pathsV1,
-			stage1V1,
-		},
+	for _, p := range s.newPropagators {
+		if p.visited() {
+			s.propagators = s.newPropagators
+			return nil
+		}
 	}
-	return setup, nil
+	s.propagators = s.oldPropagators
+	return s.oldDirectory.WalkDirectories(dirs...)
 }
 
 func (s *configSetup) propagateChanges(cfg *Config) {
