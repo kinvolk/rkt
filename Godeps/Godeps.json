@@ -153,23 +153,28 @@
 		},
 		{
 			"ImportPath": "github.com/coreos/go-systemd/activation",
-			"Comment": "v4-15-ga831f36",
-			"Rev": "a831f36d09de8f095c28eeee839df52e9de5031f"
+			"Comment": "v4-44-g2d44d43",
+			"Rev": "2d44d43b05f9de8771c24e707b6a5f0854fe0928"
 		},
 		{
 			"ImportPath": "github.com/coreos/go-systemd/dbus",
-			"Comment": "v4-15-ga831f36",
-			"Rev": "a831f36d09de8f095c28eeee839df52e9de5031f"
+			"Comment": "v4-44-g2d44d43",
+			"Rev": "2d44d43b05f9de8771c24e707b6a5f0854fe0928"
+		},
+		{
+			"ImportPath": "github.com/coreos/go-systemd/sdjournal",
+			"Comment": "v4-44-g2d44d43",
+			"Rev": "2d44d43b05f9de8771c24e707b6a5f0854fe0928"
 		},
 		{
 			"ImportPath": "github.com/coreos/go-systemd/unit",
-			"Comment": "v4-15-ga831f36",
-			"Rev": "a831f36d09de8f095c28eeee839df52e9de5031f"
+			"Comment": "v4-44-g2d44d43",
+			"Rev": "2d44d43b05f9de8771c24e707b6a5f0854fe0928"
 		},
 		{
 			"ImportPath": "github.com/coreos/go-systemd/util",
-			"Comment": "v4-15-ga831f36",
-			"Rev": "a831f36d09de8f095c28eeee839df52e9de5031f"
+			"Comment": "v4-44-g2d44d43",
+			"Rev": "2d44d43b05f9de8771c24e707b6a5f0854fe0928"
 		},
 		{
 			"ImportPath": "github.com/coreos/go-tspi/attestation",
@@ -186,6 +191,10 @@
 		{
 			"ImportPath": "github.com/coreos/ioprogress",
 			"Rev": "e7fc03058804de5488baed8df5b89f3924b9ec9a"
+		},
+		{
+			"ImportPath": "github.com/coreos/pkg/dlopen",
+			"Rev": "6707251d86c7e63067fda1b16ad967b9caec4230"
 		},
 		{
 			"ImportPath": "github.com/cpuguy83/go-md2man/md2man",
