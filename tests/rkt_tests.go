@@ -604,6 +604,30 @@ func serverHandler(t *testing.T, server *taas.Server) {
 	}
 }
 
+type gpgkey struct {
+	fingerprint string
+	path        string
+}
+
+var gpgkeys = []*gpgkey{
+	{
+		fingerprint: "D9DCEF41",
+		path:        "key1.gpg",
+	},
+	{
+		fingerprint: "585091E3",
+		path:        "key2.gpg",
+	},
+}
+
+func getGPGKey(t *testing.T, keyIndex int) *gpgkey {
+	realIndex := keyIndex - 1
+	if realIndex < 0 || len(gpgkeys) <= realIndex {
+		t.Fatalf("there are only %d keys, requested %dth key", len(gpgkeys), keyIndex)
+	}
+	return gpgkeys[realIndex]
+}
+
 func runSignImage(t *testing.T, imageFile string, keyIndex int) string {
 	ascFile := fmt.Sprintf("%s.asc", imageFile)
 	if err := os.Remove(ascFile); err != nil && !os.IsNotExist(err) {
@@ -611,15 +635,7 @@ func runSignImage(t *testing.T, imageFile string, keyIndex int) string {
 	}
 
 	// keys stored in tests/secring.gpg, tests/pubring.gpg, tests/key1.gpg, tests/key2.gpg
-	keyFingerprint := ""
-	switch keyIndex {
-	case 1:
-		keyFingerprint = "D9DCEF41"
-	case 2:
-		keyFingerprint = "585091E3"
-	default:
-		panic("unknown key")
-	}
+	keyFingerprint := getGPGKey(t, keyIndex).fingerprint
 
 	cmd := fmt.Sprintf("gpg --no-default-keyring --secret-keyring ./secring.gpg --keyring ./pubring.gpg --default-key %s --output %s --detach-sig %s",
 		keyFingerprint, ascFile, imageFile)
@@ -629,7 +645,7 @@ func runSignImage(t *testing.T, imageFile string, keyIndex int) string {
 
 func runRktTrust(t *testing.T, ctx *testutils.RktRunCtx, prefix string, keyIndex int) {
 	var cmd string
-	keyFile := fmt.Sprintf("key%d.gpg", keyIndex)
+	keyFile := getGPGKey(t, keyIndex).path
 	if prefix == "" {
 		cmd = fmt.Sprintf(`%s trust --root %s`, ctx.Cmd(), keyFile)
 	} else {
