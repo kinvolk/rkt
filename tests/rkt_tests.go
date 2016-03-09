@@ -606,6 +606,9 @@ func serverHandler(t *testing.T, server *taas.Server) {
 
 func runSignImage(t *testing.T, imageFile string, keyIndex int) string {
 	ascFile := fmt.Sprintf("%s.asc", imageFile)
+	if err := os.Remove(ascFile); err != nil && !os.IsNotExist(err) {
+		t.Fatalf("failed to remove the stray asc file %s", ascFile)
+	}
 
 	// keys stored in tests/secring.gpg, tests/pubring.gpg, tests/key1.gpg, tests/key2.gpg
 	keyFingerprint := ""
