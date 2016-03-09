@@ -28,6 +28,10 @@ import (
 	"time"
 )
 
+const (
+	Pubkeys = "pubkeys.gpg"
+)
+
 type PortType int
 
 const (
@@ -205,6 +209,10 @@ func (h *serverHandler) sendAcDiscovery(w http.ResponseWriter) {
 	// TODO(krnowak): When appc spec gets the discovery over
 	// custom port feature, possibly take it into account here
 	indexHTML := fmt.Sprintf(`<meta name="ac-discovery" content="localhost %s/{name}.{ext}">`, h.serverURL)
+	if _, ok := h.fileSet[Pubkeys]; ok {
+		indexHTML = fmt.Sprintf(`%s<meta name="ac-discovery-pubkeys" content="localhost %s/%s">`, indexHTML, h.serverURL, Pubkeys)
+	}
+	h.sendMsg(fmt.Sprintf("  sending meta tags: %s", indexHTML))
 	w.Write([]byte(indexHTML))
 	h.sendMsg("  done.")
 }
@@ -294,6 +302,10 @@ type ServerSetup struct {
 	MsgCapacity int
 }
 
+// GetDefaultServerSetup returns a setup for discovery server running
+// on a fixed https port (443), which does not defer the signature
+// download until the image is downloaded (like quay does) and
+// requires no authentication.
 func GetDefaultServerSetup() *ServerSetup {
 	return &ServerSetup{
 		Port:        PortFixed,
@@ -309,6 +321,11 @@ func (s *Server) Close() {
 	close(s.handler.msg)
 }
 
+// UpdateFileSet makes the given files to be available for downloading
+// from the server. The files are available under
+// http(s)://localhost/<key>. A special key named "pubkeys.gpg" will
+// make the server to emit the ac-discovery-pubkeys meta tag during
+// discovery.
 func (s *Server) UpdateFileSet(fileSet map[string]string) error {
 	s.handler.fileSet = make(map[string]*servedFile, len(fileSet))
 	for base, path := range fileSet {
