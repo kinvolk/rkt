@@ -644,8 +644,13 @@ func runSignImage(t *testing.T, imageFile string, keyIndex int) string {
 }
 
 func runRktTrust(t *testing.T, ctx *testutils.RktRunCtx, prefix string, keyIndex int) {
+	key := getGPGKey(t, keyIndex)
+	runRktTrustKey(t, ctx, prefix, key)
+}
+
+func runRktTrustKey(t *testing.T, ctx *testutils.RktRunCtx, prefix string, key *gpgkey) {
 	var cmd string
-	keyFile := getGPGKey(t, keyIndex).path
+	keyFile := key.path
 	if prefix == "" {
 		cmd = fmt.Sprintf(`%s trust --root %s`, ctx.Cmd(), keyFile)
 	} else {
