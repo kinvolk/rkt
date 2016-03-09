@@ -636,22 +636,32 @@ func runRktTrust(t *testing.T, ctx *testutils.RktRunCtx, prefix string, keyIndex
 	child := spawnOrFail(t, cmd)
 	defer waitOrFail(t, child, 0)
 
+	runGPGKeyReview(t, child, prefix, true)
+}
+
+func runGPGKeyReview(t *testing.T, child *gexpect.ExpectSubprocess, prefix string, accept bool) {
 	expected := "Are you sure you want to trust this key"
 	if err := expectWithOutput(child, expected); err != nil {
 		t.Fatalf("Expected but didn't find %q in %v", expected, err)
 	}
 
-	if err := child.SendLine("yes"); err != nil {
-		t.Fatalf("Cannot confirm rkt trust: %s", err)
-	}
+	if accept {
+		if err := child.SendLine("yes"); err != nil {
+			t.Fatalf("Cannot confirm GPG key trust: %v", err)
+		}
 
-	if prefix == "" {
-		expected = "Added root key at"
+		if prefix == "" {
+			expected = "Added root key at"
+		} else {
+			expected = fmt.Sprintf("Added key for prefix %q at", prefix)
+		}
+		if err := expectWithOutput(child, expected); err != nil {
+			t.Fatalf("Expected but didn't find %q in %v", expected, err)
+		}
 	} else {
-		expected = fmt.Sprintf(`Added key for prefix "%s" at`, prefix)
-	}
-	if err := expectWithOutput(child, expected); err != nil {
-		t.Fatalf("Expected but didn't find %q in %v", expected, err)
+		if err := child.SendLine("no"); err != nil {
+			t.Fatalf("Cannot reject GPG key trust: %v", err)
+		}
 	}
 }
 
