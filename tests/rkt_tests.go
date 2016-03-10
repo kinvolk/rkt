@@ -630,6 +630,11 @@ func getGPGKey(t *testing.T, keyIndex int) *gpgkey {
 
 func runSignImage(t *testing.T, imageFile string, keyIndex int) string {
 	ascFile := fmt.Sprintf("%s.asc", imageFile)
+	runSignImageToFile(t, imageFile, ascFile, keyIndex)
+	return ascFile
+}
+
+func runSignImageToFile(t *testing.T, imageFile, ascFile string, keyIndex int) {
 	if err := os.Remove(ascFile); err != nil && !os.IsNotExist(err) {
 		t.Fatalf("failed to remove the stray asc file %s", ascFile)
 	}
@@ -640,7 +645,6 @@ func runSignImage(t *testing.T, imageFile string, keyIndex int) string {
 	cmd := fmt.Sprintf("gpg --no-default-keyring --secret-keyring ./secring.gpg --keyring ./pubring.gpg --default-key %s --output %s --detach-sig %s",
 		keyFingerprint, ascFile, imageFile)
 	spawnAndWaitOrFail(t, cmd, 0)
-	return ascFile
 }
 
 func runRktTrust(t *testing.T, ctx *testutils.RktRunCtx, prefix string, keyIndex int) {
