@@ -84,7 +84,7 @@ func patchACI(inputFileName, newFileName string, args ...string) string {
 	var allArgs []string
 
 	actool := testutils.GetValueFromEnvOrPanic("ACTOOL")
-	tmpDir := testutils.GetValueFromEnvOrPanic("FUNCTIONAL_TMP")
+	tmpDir := getFunctionalTmpDir()
 
 	imagePath, err := filepath.Abs(filepath.Join(tmpDir, newFileName))
 	if err != nil {
@@ -150,6 +150,10 @@ func getEmptyImagePath() string {
 
 func getInspectImagePath() string {
 	return testutils.GetValueFromEnvOrPanic("RKT_INSPECT_IMAGE")
+}
+
+func getFunctionalTmpDir() string {
+	return testutils.GetValueFromEnvOrPanic("FUNCTIONAL_TMP")
 }
 
 func getHashOrPanic(path string) string {
