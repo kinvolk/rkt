@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -240,6 +241,7 @@ func (h *serverHandler) handleFile(w http.ResponseWriter, reqPath string, header
 		return
 	}
 	addCacheHeaders(w, sf)
+	w.Header().Set("Content-Length", strconv.Itoa(len(contents)))
 	w.Write(contents)
 	reqImagePath, isAsc := isPathAnImageKey(reqPath)
 	if isAsc {
