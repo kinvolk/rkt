@@ -214,8 +214,11 @@ func (h *serverHandler) sendAcDiscovery(w http.ResponseWriter) {
 		indexHTML = fmt.Sprintf(`%s<meta name="ac-discovery-pubkeys" content="localhost %s/%s">`, indexHTML, h.serverURL, Pubkeys)
 	}
 	h.sendMsg(fmt.Sprintf("  sending meta tags: %s", indexHTML))
-	w.Write([]byte(indexHTML))
-	h.sendMsg("  done.")
+	logMsg := "  done."
+	if _, err := w.Write([]byte(indexHTML)); err != nil {
+		logMsg = fmt.Sprintf("  failed to write discovery meta tags: %v", err)
+	}
+	h.sendMsg(logMsg)
 }
 
 func (h *serverHandler) handleFile(w http.ResponseWriter, reqPath string, headers http.Header) {
@@ -242,14 +245,17 @@ func (h *serverHandler) handleFile(w http.ResponseWriter, reqPath string, header
 	}
 	addCacheHeaders(w, sf)
 	w.Header().Set("Content-Length", strconv.Itoa(len(contents)))
-	w.Write(contents)
+	logMsg := "  done."
+	if _, err := w.Write(contents); err != nil {
+		logMsg = fmt.Sprintf("  failed to write the file contents: %v", err)
+	}
 	reqImagePath, isAsc := isPathAnImageKey(reqPath)
 	if isAsc {
 		delete(h.servedImages, reqImagePath)
 	} else {
 		h.servedImages[reqPath] = struct{}{}
 	}
-	h.sendMsg("  done.")
+	h.sendMsg(logMsg)
 }
 
 func (h *serverHandler) canServe(reqPath string, w http.ResponseWriter) bool {
