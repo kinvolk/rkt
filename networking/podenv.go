@@ -15,21 +15,18 @@
 package networking
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/appc/spec/schema/types"
 	"github.com/hashicorp/errwrap"
 
 	"github.com/coreos/rkt/common"
-	"github.com/coreos/rkt/networking/netinfo"
+	"github.com/coreos/rkt/networking/config"
 	nettypes "github.com/coreos/rkt/networking/types"
 )
 
@@ -50,35 +47,50 @@ type podEnv struct {
 	podID        types.UUID
 	netsLoadList common.NetList
 	localConfig  string
+	config       *config.Config
 }
 
 // Loads nets specified by user and default one from stage1
 func (e *podEnv) loadNets() ([]*nettypes.ActiveNet, error) {
-	nets, err := loadUserNets(e.localConfig, e.netsLoadList)
-	if err != nil {
-		return nil, err
-	}
-
 	if e.netsLoadList.None() {
-		return nets, nil
+		stderr.Printf("networking namespace with loopback only")
+		return nil, nil
 	}
 
-	if !netExists(nets, "default") && !netExists(nets, "default-restricted") {
-		var defaultNet string
-		if e.netsLoadList.Specific("default") || e.netsLoadList.All() {
-			defaultNet = DefaultNetPath
-		} else {
-			defaultNet = DefaultRestrictedNetPath
+	var nets []*nettypes.ActiveNet
+	overridesDefault := false
+	for _, n := range e.config.Networks.Ordered {
+		if !(e.netsLoadList.All() || e.netsLoadList.Specific(n.Conf.Name)) {
+			continue
 		}
-		defPath := path.Join(common.Stage1RootfsPath(e.podRoot), defaultNet)
-		n, err := loadNet(defPath)
-		if err != nil {
-			return nil, err
+		if n.Conf.Name == "default" || n.Conf.Name == "default-restricted" {
+			overridesDefault = true
+			stderr.Printf(`overriding %q network with %v`, n.Conf.Name, n.Runtime.ConfPath)
 		}
+		n.Runtime.Args = e.netsLoadList.SpecificArgs(n.Conf.Name)
 		nets = append(nets, n)
 	}
 
-	missing := missingNets(e.netsLoadList, nets)
+	if !overridesDefault {
+		defPath := path.Join(common.Stage1RootfsPath(e.podRoot), "etc", "rkt")
+		defCfg, err := config.GetConfigFrom(defPath)
+		if err != nil {
+			return nil, err
+		}
+		var name string
+		if e.netsLoadList.Specific("default") || e.netsLoadList.All() {
+			name = "default"
+		} else {
+			name = "default-restricted"
+		}
+		if an, exists := defCfg.Networks.ByName[name]; exists {
+			nets = append(nets, an)
+		} else {
+			return nil, fmt.Errorf("No configuration for %q network in stage1", name)
+		}
+	}
+
+	missing := e.missingNets(nets)
 	if len(missing) > 0 {
 		return nil, fmt.Errorf("networks not found: %v", strings.Join(missing, ", "))
 	}
@@ -114,8 +126,8 @@ func (e *podEnv) setupNets(nets []*nettypes.ActiveNet) error {
 		stderr.Printf("loading network %v with type %v", n.Conf.Name, n.Conf.Type)
 
 		n.Runtime.IfName = fmt.Sprintf(IfNamePattern, i)
-		if n.Runtime.ConfPath, err = copyFileToDir(n.Runtime.ConfPath, e.netDir()); err != nil {
-			return errwrap.Wrap(fmt.Errorf("error copying %q to %q", n.Runtime.ConfPath, e.netDir()), err)
+		if n.Runtime.ConfPath, err = e.putConfInNetDir(n); err != nil {
+			return err
 		}
 
 		n.Runtime.IP, n.Runtime.HostIP, err = e.netPluginAdd(n, nspath)
@@ -145,130 +157,17 @@ func (e *podEnv) teardownNets(nets []*nettypes.ActiveNet) {
 	}
 }
 
-func listFiles(dir string) ([]string, error) {
-	dirents, err := ioutil.ReadDir(dir)
-	switch {
-	case err == nil:
-	case os.IsNotExist(err):
-		return nil, nil
-	default:
-		return nil, err
+func (e *podEnv) putConfInNetDir(n *nettypes.ActiveNet) (string, error) {
+	dst := filepath.Join(e.netDir(), filepath.Base(n.Runtime.ConfPath))
+	if err := ioutil.WriteFile(dst, n.ConfBytes, 0666); err != nil {
+		return "", errwrap.Wrap(fmt.Errorf("error writing the config in %q", dst), err)
 	}
-
-	var files []string
-	for _, dent := range dirents {
-		if dent.IsDir() {
-			continue
-		}
-
-		files = append(files, dent.Name())
-	}
-
-	return files, nil
+	return dst, nil
 }
 
-func netExists(nets []*nettypes.ActiveNet, name string) bool {
-	for _, n := range nets {
-		if n.Conf.Name == name {
-			return true
-		}
-	}
-	return false
-}
-
-func loadNet(filepath string) (*nettypes.ActiveNet, error) {
-	bytes, err := ioutil.ReadFile(filepath)
-	if err != nil {
-		return nil, err
-	}
-
-	n := &nettypes.NetConf{}
-	if err = json.Unmarshal(bytes, n); err != nil {
-		return nil, errwrap.Wrap(fmt.Errorf("error loading %v", filepath), err)
-	}
-
-	return &nettypes.ActiveNet{
-		ConfBytes: bytes,
-		Conf:      n,
-		Runtime: &netinfo.NetInfo{
-			NetName:  n.Name,
-			ConfPath: filepath,
-		},
-	}, nil
-}
-
-func copyFileToDir(src, dstdir string) (string, error) {
-	dst := filepath.Join(dstdir, filepath.Base(src))
-
-	s, err := os.Open(src)
-	if err != nil {
-		return "", err
-	}
-	defer s.Close()
-
-	d, err := os.Create(dst)
-	if err != nil {
-		return "", err
-	}
-	defer d.Close()
-
-	_, err = io.Copy(d, s)
-	return dst, err
-}
-
-func loadUserNets(localConfig string, netsLoadList common.NetList) ([]*nettypes.ActiveNet, error) {
-	if netsLoadList.None() {
-		stderr.Printf("networking namespace with loopback only")
-		return nil, nil
-	}
-
-	userNetPath := filepath.Join(localConfig, UserNetPathSuffix)
-	stderr.Printf("loading networks from %v", userNetPath)
-
-	files, err := listFiles(userNetPath)
-	if err != nil {
-		return nil, err
-	}
-	sort.Strings(files)
-	nets := make([]*nettypes.ActiveNet, 0, len(files))
-
-	for _, filename := range files {
-		filepath := filepath.Join(userNetPath, filename)
-
-		if !strings.HasSuffix(filepath, ".conf") {
-			continue
-		}
-
-		n, err := loadNet(filepath)
-		if err != nil {
-			return nil, err
-		}
-
-		if !(netsLoadList.All() || netsLoadList.Specific(n.Conf.Name)) {
-			continue
-		}
-
-		if n.Conf.Name == "default" ||
-			n.Conf.Name == "default-restricted" {
-			stderr.Printf(`overriding %q network with %v`, n.Conf.Name, filename)
-		}
-
-		if netExists(nets, n.Conf.Name) {
-			stderr.Printf("%q network already defined, ignoring %v", n.Conf.Name, filename)
-			continue
-		}
-
-		n.runtime.Args = netsLoadList.SpecificArgs(n.Conf.Name)
-
-		nets = append(nets, n)
-	}
-
-	return nets, nil
-}
-
-func missingNets(defined common.NetList, loaded []*nettypes.ActiveNet) []string {
+func (e *podEnv) missingNets(loaded []*nettypes.ActiveNet) []string {
 	diff := make(map[string]struct{})
-	for _, n := range defined.StringsOnlyNames() {
+	for _, n := range e.netsLoadList.StringsOnlyNames() {
 		if n != "all" {
 			diff[n] = struct{}{}
 		}
