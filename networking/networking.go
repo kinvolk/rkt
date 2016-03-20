@@ -25,13 +25,13 @@ import (
 	"syscall"
 
 	"github.com/appc/cni/pkg/ns"
-	cnitypes "github.com/appc/cni/pkg/types"
 	"github.com/appc/spec/schema/types"
 	"github.com/hashicorp/errwrap"
 	"github.com/vishvananda/netlink"
 
 	"github.com/coreos/rkt/common"
 	"github.com/coreos/rkt/networking/netinfo"
+	nettypes "github.com/coreos/rkt/networking/types"
 	"github.com/coreos/rkt/pkg/log"
 )
 
@@ -53,15 +53,7 @@ type Networking struct {
 	podEnv
 
 	hostNS *os.File
-	nets   []activeNet
-}
-
-// NetConf local struct extends cnitypes.NetConf with information about masquerading
-// similar to CNI plugins
-type NetConf struct {
-	cnitypes.NetConf
-	IPMasq bool `json:"ipMasq"`
-	MTU    int  `json:"mtu"`
+	nets   []*nettypes.ActiveNet
 }
 
 var stderr *log.Logger
@@ -203,7 +195,7 @@ func Load(podRoot string, podID *types.UUID) (*Networking, error) {
 		return nil, err
 	}
 
-	var nets []activeNet
+	var nets []*nettypes.ActiveNet
 	for _, ni := range nis {
 		n, err := loadNet(ni.ConfPath)
 		if err != nil {
@@ -212,11 +204,8 @@ func Load(podRoot string, podID *types.UUID) (*Networking, error) {
 			}
 			continue
 		}
-
-		// make a copy of ni to make it a unique object as it's saved via ptr
-		rti := ni
-		n.runtime = &rti
-		nets = append(nets, *n)
+		n.Runtime = ni
+		nets = append(nets, n)
 	}
 
 	return &Networking{
@@ -233,14 +222,14 @@ func (n *Networking) GetDefaultIP() net.IP {
 	if len(n.nets) == 0 {
 		return nil
 	}
-	return n.nets[len(n.nets)-1].runtime.IP
+	return n.nets[len(n.nets)-1].Runtime.IP
 }
 
 func (n *Networking) GetDefaultHostIP() (net.IP, error) {
 	if len(n.nets) == 0 {
 		return nil, fmt.Errorf("no networks found")
 	}
-	return n.nets[len(n.nets)-1].runtime.HostIP, nil
+	return n.nets[len(n.nets)-1].Runtime.HostIP, nil
 }
 
 // GetIfacesByIP searches for and returns the interfaces with the given IP
@@ -341,7 +330,7 @@ func (n *Networking) enterHostNS() error {
 func (e *Networking) Save() error {
 	var nis []netinfo.NetInfo
 	for _, n := range e.nets {
-		nis = append(nis, *n.runtime)
+		nis = append(nis, *n.Runtime)
 	}
 
 	return netinfo.Save(e.podRoot, nis)
