@@ -30,6 +30,7 @@ import (
 
 	"github.com/coreos/rkt/common"
 	"github.com/coreos/rkt/networking/netinfo"
+	nettypes "github.com/coreos/rkt/networking/types"
 )
 
 const (
@@ -51,14 +52,8 @@ type podEnv struct {
 	localConfig  string
 }
 
-type activeNet struct {
-	confBytes []byte
-	conf      *NetConf
-	runtime   *netinfo.NetInfo
-}
-
 // Loads nets specified by user and default one from stage1
-func (e *podEnv) loadNets() ([]activeNet, error) {
+func (e *podEnv) loadNets() ([]*nettypes.ActiveNet, error) {
 	nets, err := loadUserNets(e.localConfig, e.netsLoadList)
 	if err != nil {
 		return nil, err
@@ -80,7 +75,7 @@ func (e *podEnv) loadNets() ([]activeNet, error) {
 		if err != nil {
 			return nil, err
 		}
-		nets = append(nets, *n)
+		nets = append(nets, n)
 	}
 
 	missing := missingNets(e.netsLoadList, nets)
@@ -99,7 +94,7 @@ func (e *podEnv) netDir() string {
 	return filepath.Join(e.podRoot, "net")
 }
 
-func (e *podEnv) setupNets(nets []activeNet) error {
+func (e *podEnv) setupNets(nets []*nettypes.ActiveNet) error {
 	err := os.MkdirAll(e.netDir(), 0755)
 	if err != nil {
 		return err
@@ -114,38 +109,38 @@ func (e *podEnv) setupNets(nets []activeNet) error {
 
 	nspath := e.podNSPath()
 
-	n := activeNet{}
+	var n *nettypes.ActiveNet
 	for i, n = range nets {
-		stderr.Printf("loading network %v with type %v", n.conf.Name, n.conf.Type)
+		stderr.Printf("loading network %v with type %v", n.Conf.Name, n.Conf.Type)
 
-		n.runtime.IfName = fmt.Sprintf(IfNamePattern, i)
-		if n.runtime.ConfPath, err = copyFileToDir(n.runtime.ConfPath, e.netDir()); err != nil {
-			return errwrap.Wrap(fmt.Errorf("error copying %q to %q", n.runtime.ConfPath, e.netDir()), err)
+		n.Runtime.IfName = fmt.Sprintf(IfNamePattern, i)
+		if n.Runtime.ConfPath, err = copyFileToDir(n.Runtime.ConfPath, e.netDir()); err != nil {
+			return errwrap.Wrap(fmt.Errorf("error copying %q to %q", n.Runtime.ConfPath, e.netDir()), err)
 		}
 
-		n.runtime.IP, n.runtime.HostIP, err = e.netPluginAdd(&n, nspath)
+		n.Runtime.IP, n.Runtime.HostIP, err = e.netPluginAdd(n, nspath)
 		if err != nil {
-			return errwrap.Wrap(fmt.Errorf("error adding network %q", n.conf.Name), err)
+			return errwrap.Wrap(fmt.Errorf("error adding network %q", n.Conf.Name), err)
 		}
 	}
 	return nil
 }
 
-func (e *podEnv) teardownNets(nets []activeNet) {
+func (e *podEnv) teardownNets(nets []*nettypes.ActiveNet) {
 	nspath := e.podNSPath()
 
 	for i := len(nets) - 1; i >= 0; i-- {
-		stderr.Printf("teardown - executing net-plugin %v", nets[i].conf.Type)
+		stderr.Printf("teardown - executing net-plugin %v", nets[i].Conf.Type)
 
-		err := e.netPluginDel(&nets[i], nspath)
+		err := e.netPluginDel(nets[i], nspath)
 		if err != nil {
-			stderr.PrintE(fmt.Sprintf("error deleting %q", nets[i].conf.Name), err)
+			stderr.PrintE(fmt.Sprintf("error deleting %q", nets[i].Conf.Name), err)
 		}
 
 		// Delete the conf file to signal that the network was
 		// torn down (or at least attempted to)
-		if err = os.Remove(nets[i].runtime.ConfPath); err != nil {
-			stderr.PrintE(fmt.Sprintf("error deleting %q", nets[i].runtime.ConfPath), err)
+		if err = os.Remove(nets[i].Runtime.ConfPath); err != nil {
+			stderr.PrintE(fmt.Sprintf("error deleting %q", nets[i].Runtime.ConfPath), err)
 		}
 	}
 }
@@ -172,30 +167,30 @@ func listFiles(dir string) ([]string, error) {
 	return files, nil
 }
 
-func netExists(nets []activeNet, name string) bool {
+func netExists(nets []*nettypes.ActiveNet, name string) bool {
 	for _, n := range nets {
-		if n.conf.Name == name {
+		if n.Conf.Name == name {
 			return true
 		}
 	}
 	return false
 }
 
-func loadNet(filepath string) (*activeNet, error) {
+func loadNet(filepath string) (*nettypes.ActiveNet, error) {
 	bytes, err := ioutil.ReadFile(filepath)
 	if err != nil {
 		return nil, err
 	}
 
-	n := &NetConf{}
+	n := &nettypes.NetConf{}
 	if err = json.Unmarshal(bytes, n); err != nil {
 		return nil, errwrap.Wrap(fmt.Errorf("error loading %v", filepath), err)
 	}
 
-	return &activeNet{
-		confBytes: bytes,
-		conf:      n,
-		runtime: &netinfo.NetInfo{
+	return &nettypes.ActiveNet{
+		ConfBytes: bytes,
+		Conf:      n,
+		Runtime: &netinfo.NetInfo{
 			NetName:  n.Name,
 			ConfPath: filepath,
 		},
@@ -221,7 +216,7 @@ func copyFileToDir(src, dstdir string) (string, error) {
 	return dst, err
 }
 
-func loadUserNets(localConfig string, netsLoadList common.NetList) ([]activeNet, error) {
+func loadUserNets(localConfig string, netsLoadList common.NetList) ([]*nettypes.ActiveNet, error) {
 	if netsLoadList.None() {
 		stderr.Printf("networking namespace with loopback only")
 		return nil, nil
@@ -235,7 +230,7 @@ func loadUserNets(localConfig string, netsLoadList common.NetList) ([]activeNet,
 		return nil, err
 	}
 	sort.Strings(files)
-	nets := make([]activeNet, 0, len(files))
+	nets := make([]*nettypes.ActiveNet, 0, len(files))
 
 	for _, filename := range files {
 		filepath := filepath.Join(userNetPath, filename)
@@ -249,29 +244,29 @@ func loadUserNets(localConfig string, netsLoadList common.NetList) ([]activeNet,
 			return nil, err
 		}
 
-		if !(netsLoadList.All() || netsLoadList.Specific(n.conf.Name)) {
+		if !(netsLoadList.All() || netsLoadList.Specific(n.Conf.Name)) {
 			continue
 		}
 
-		if n.conf.Name == "default" ||
-			n.conf.Name == "default-restricted" {
-			stderr.Printf(`overriding %q network with %v`, n.conf.Name, filename)
+		if n.Conf.Name == "default" ||
+			n.Conf.Name == "default-restricted" {
+			stderr.Printf(`overriding %q network with %v`, n.Conf.Name, filename)
 		}
 
-		if netExists(nets, n.conf.Name) {
-			stderr.Printf("%q network already defined, ignoring %v", n.conf.Name, filename)
+		if netExists(nets, n.Conf.Name) {
+			stderr.Printf("%q network already defined, ignoring %v", n.Conf.Name, filename)
 			continue
 		}
 
-		n.runtime.Args = netsLoadList.SpecificArgs(n.conf.Name)
+		n.runtime.Args = netsLoadList.SpecificArgs(n.Conf.Name)
 
-		nets = append(nets, *n)
+		nets = append(nets, n)
 	}
 
 	return nets, nil
 }
 
-func missingNets(defined common.NetList, loaded []activeNet) []string {
+func missingNets(defined common.NetList, loaded []*nettypes.ActiveNet) []string {
 	diff := make(map[string]struct{})
 	for _, n := range defined.StringsOnlyNames() {
 		if n != "all" {
@@ -280,7 +275,7 @@ func missingNets(defined common.NetList, loaded []activeNet) []string {
 	}
 
 	for _, an := range loaded {
-		delete(diff, an.conf.Name)
+		delete(diff, an.Conf.Name)
 	}
 
 	var missing []string
