@@ -84,6 +84,13 @@ type oldConfJSONParser struct {
 var _ baseconfig.Parser = (*oldConfJSONParser)(nil)
 var _ configPropagator = (*oldConfJSONParser)(nil)
 
+type networkV1JSONParser struct {
+	parserBase
+}
+
+var _ baseconfig.Parser = (*networkV1JSONParser)(nil)
+var _ configPropagator = (*networkV1JSONParser)(nil)
+
 // the config type for conf files, implements
 // github.com/coreos/rkt/pkg/config Type
 

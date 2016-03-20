@@ -22,6 +22,14 @@ import (
 type configSetup struct {
 	oldDirectory   *baseconfig.Directory
 	oldPropagators []configPropagator
+
+	newDirectory   *baseconfig.Directory
+	newPropagators []configPropagator
+
+	// propagators will be set to either newPropagators or
+	// oldPropagators when we will know which of newDirectory or
+	// oldDirectory was used
+	propagators []configPropagator
 }
 
 func GetConfigFrom(dirs ...string) (*Config, error) {
@@ -45,9 +53,16 @@ func getConfigSetup() (*configSetup, error) {
 	if err != nil {
 		return nil, err
 	}
+	newDir, newProps, err := getNewSetup()
+	if err != nil {
+		return nil, err
+	}
 	setup := &configSetup{
 		oldDirectory:   oldDir,
 		oldPropagators: oldProps,
+
+		newDirectory:   newDir,
+		newPropagators: newProps,
 	}
 	return setup, nil
 }
@@ -80,6 +95,34 @@ func getOldSetup() (*baseconfig.Directory, []configPropagator, error) {
 	return dir, props, nil
 }
 
+func getNewSetup() (*baseconfig.Directory, []configPropagator, error) {
+	networkV1 := &networkV1JSONParser{}
+	dir := common.NewConfigDirectory(common.Stage1CDB)
+	parsers := []*baseconfig.ParserSetup{
+		{
+			Kind:    "network",
+			Version: "v1",
+			Parser:  networkV1,
+		},
+	}
+	subdirs := []*baseconfig.SubdirSetup{
+		{
+			Subdir: "net.d",
+			Kinds:  []string{"network"},
+		},
+	}
+	if err := dir.RegisterParsers(parsers); err != nil {
+		return nil, nil, err
+	}
+	if err := dir.RegisterSubdirectories(subdirs); err != nil {
+		return nil, nil, err
+	}
+	props := []configPropagator{
+		networkV1,
+	}
+	return dir, props, nil
+}
+
 func (s *configSetup) run(dirs ...string) (*Config, error) {
 	if err := s.walkDirectories(dirs...); err != nil {
 		return nil, err
@@ -90,11 +133,23 @@ func (s *configSetup) run(dirs ...string) (*Config, error) {
 }
 
 func (s *configSetup) walkDirectories(dirs ...string) error {
+	if s.newDirectory != nil {
+		if err := s.newDirectory.WalkDirectories(dirs...); err != nil {
+			return err
+		}
+		for _, p := range s.newPropagators {
+			if p.visited() {
+				s.propagators = s.newPropagators
+				return nil
+			}
+		}
+	}
+	s.propagators = s.oldPropagators
 	return s.oldDirectory.WalkDirectories(dirs...)
 }
 
 func (s *configSetup) propagateChanges(cfg *Config) {
-	for _, p := range s.oldPropagators {
+	for _, p := range s.propagators {
 		p.propagateConfig(cfg)
 	}
 }
