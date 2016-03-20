@@ -34,6 +34,7 @@ import (
 	"github.com/vishvananda/netlink"
 
 	"github.com/coreos/rkt/common"
+	"github.com/coreos/rkt/networking/config"
 	"github.com/coreos/rkt/networking/netinfo"
 	"github.com/coreos/rkt/networking/tuntap"
 	nettypes "github.com/coreos/rkt/networking/types"
@@ -416,12 +417,18 @@ func kvmTransformFlannelNetwork(net *nettypes.ActiveNet) error {
 // kvmSetup prepare new Networking to be used in kvm environment based on tuntap pair interfaces
 // to allow communication with virtual machine created by lkvm tool
 func kvmSetup(podRoot string, podID types.UUID, fps []ForwardedPort, netList common.NetList, localConfig string) (*Networking, error) {
+	cfg, err := config.GetConfigFrom(localConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	network := Networking{
 		podEnv: podEnv{
 			podRoot:      podRoot,
 			podID:        podID,
 			netsLoadList: netList,
 			localConfig:  localConfig,
+			config:       cfg,
 		},
 	}
 	var e error

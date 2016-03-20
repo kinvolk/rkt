@@ -30,6 +30,7 @@ import (
 	"github.com/vishvananda/netlink"
 
 	"github.com/coreos/rkt/common"
+	"github.com/coreos/rkt/networking/config"
 	"github.com/coreos/rkt/networking/netinfo"
 	nettypes "github.com/coreos/rkt/networking/types"
 	"github.com/coreos/rkt/pkg/log"
@@ -67,6 +68,10 @@ func Setup(podRoot string, podID types.UUID, fps []ForwardedPort, netList common
 	if flavor == "kvm" {
 		return kvmSetup(podRoot, podID, fps, netList, localConfig)
 	}
+	cfg, err := config.GetConfigFrom(localConfig)
+	if err != nil {
+		return nil, err
+	}
 
 	// TODO(jonboulle): currently podRoot is _always_ ".", and behaviour in other
 	// circumstances is untested. This should be cleaned up.
@@ -76,6 +81,7 @@ func Setup(podRoot string, podID types.UUID, fps []ForwardedPort, netList common
 			podID:        podID,
 			netsLoadList: netList,
 			localConfig:  localConfig,
+			config:       cfg,
 		},
 	}
 
@@ -195,17 +201,18 @@ func Load(podRoot string, podID *types.UUID) (*Networking, error) {
 		return nil, err
 	}
 
+	podCfg, err := config.GetPodConfig(podRoot)
+	if err != nil {
+		return nil, err
+	}
 	var nets []*nettypes.ActiveNet
 	for _, ni := range nis {
-		n, err := loadNet(ni.ConfPath)
-		if err != nil {
-			if !os.IsNotExist(err) {
-				stderr.PrintE(fmt.Sprintf("error loading %q; ignoring", ni.ConfPath), err)
-			}
+		an, exists := podCfg.Networks.ByName[ni.NetName]
+		if !exists {
 			continue
 		}
-		n.Runtime = ni
-		nets = append(nets, n)
+		an.Runtime = &ni
+		nets = append(nets, an)
 	}
 
 	return &Networking{
