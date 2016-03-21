@@ -518,7 +518,13 @@ func stage1() int {
 			return 1
 		}
 
-		n, err = networking.Setup(root, p.UUID, fps, netList, localConfig, flavor, debug)
+		// we pass all the paths to Setup, even if they are
+		// empty, so Setup will know that local config is
+		// always under index 1. This is needed only for
+		// backwards compatibility (for the network plugins
+		// directory in local config hack).
+		paths := []string{systemConfig, localConfig, userConfig}
+		n, err = networking.Setup(root, p.UUID, fps, netList, paths, flavor, debug)
 		if err != nil {
 			log.PrintE("failed to setup network", err)
 			return 1

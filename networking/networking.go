@@ -59,16 +59,18 @@ type Networking struct {
 
 var stderr *log.Logger
 
-// Setup creates a new networking namespace and executes network plugins to
-// set up networking. It returns in the new pod namespace
-func Setup(podRoot string, podID types.UUID, fps []ForwardedPort, netList common.NetList, localConfig, flavor string, debug bool) (*Networking, error) {
+// Setup creates a new networking namespace and executes network
+// plugins to set up networking. It returns in the new pod
+// namespace. The config paths slice passed should have at least two
+// elements - a path to a system config and a path to a local config.
+func Setup(podRoot string, podID types.UUID, fps []ForwardedPort, netList common.NetList, configPaths []string, flavor string, debug bool) (*Networking, error) {
 
 	stderr = log.New(os.Stderr, "networking", debug)
 
 	if flavor == "kvm" {
-		return kvmSetup(podRoot, podID, fps, netList, localConfig)
+		return kvmSetup(podRoot, podID, fps, netList, configPaths)
 	}
-	cfg, err := config.GetConfigFrom(localConfig)
+	cfg, err := config.GetConfigFrom(configPaths...)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +82,7 @@ func Setup(podRoot string, podID types.UUID, fps []ForwardedPort, netList common
 			podRoot:      podRoot,
 			podID:        podID,
 			netsLoadList: netList,
-			localConfig:  localConfig,
+			localConfig:  configPaths[1],
 			config:       cfg,
 		},
 	}

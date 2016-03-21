@@ -15,6 +15,8 @@
 package config
 
 import (
+	"errors"
+
 	"github.com/coreos/rkt/common"
 	baseconfig "github.com/coreos/rkt/pkg/config"
 )
@@ -37,7 +39,17 @@ func GetConfigFrom(dirs ...string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	return setup.run(dirs...)
+	var filteredDirs []string
+	for _, dir := range dirs {
+		if dir == "" {
+			continue
+		}
+		filteredDirs = append(filteredDirs, dir)
+	}
+	if len(filteredDirs) == 0 {
+		return nil, errors.New("no valid directories to get the configuration from")
+	}
+	return setup.run(filteredDirs...)
 }
 
 func GetPodConfig(podRoot string) (*Config, error) {

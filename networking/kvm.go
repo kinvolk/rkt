@@ -416,8 +416,8 @@ func kvmTransformFlannelNetwork(net *nettypes.ActiveNet) error {
 
 // kvmSetup prepare new Networking to be used in kvm environment based on tuntap pair interfaces
 // to allow communication with virtual machine created by lkvm tool
-func kvmSetup(podRoot string, podID types.UUID, fps []ForwardedPort, netList common.NetList, localConfig string) (*Networking, error) {
-	cfg, err := config.GetConfigFrom(localConfig)
+func kvmSetup(podRoot string, podID types.UUID, fps []ForwardedPort, netList common.NetList, configPaths []string) (*Networking, error) {
+	cfg, err := config.GetConfigFrom(configPaths...)
 	if err != nil {
 		return nil, err
 	}
@@ -427,7 +427,7 @@ func kvmSetup(podRoot string, podID types.UUID, fps []ForwardedPort, netList com
 			podRoot:      podRoot,
 			podID:        podID,
 			netsLoadList: netList,
-			localConfig:  localConfig,
+			localConfig:  configPaths[1],
 			config:       cfg,
 		},
 	}
