@@ -102,7 +102,9 @@ var (
 	privateUsers string
 	mdsToken     string
 	localhostIP  net.IP
+	systemConfig string
 	localConfig  string
+	userConfig   string
 	hostname     string
 	log          *rktlog.Logger
 	diag         *rktlog.Logger
@@ -114,7 +116,9 @@ func init() {
 	flag.BoolVar(&interactive, "interactive", false, "The pod is interactive")
 	flag.StringVar(&privateUsers, "private-users", "", "Run within user namespace. Can be set to [=UIDBASE[:NUIDS]]")
 	flag.StringVar(&mdsToken, "mds-token", "", "MDS auth token")
+	flag.StringVar(&systemConfig, "system-config", "", "System config path")
 	flag.StringVar(&localConfig, "local-config", common.DefaultLocalConfigDir, "Local config path")
+	flag.StringVar(&userConfig, "user-config", "", "User config path")
 	flag.StringVar(&hostname, "hostname", "", "Hostname of the pod")
 	// this ensures that main runs only on main thread (thread group leader).
 	// since namespace ops (unshare, setns) are done for a single thread, we

@@ -73,3 +73,7 @@ func (s1v *ifaceVersion) Get() int {
 func (s1v *ifaceVersion) SupportsHostname() bool {
 	return s1v.Get() > 1
 }
+
+func (s1v *ifaceVersion) SupportsMoreConfigDirectories() bool {
+	return s1v.Get() > 2
+}
