@@ -506,7 +506,7 @@ func Run(cfg RunConfig, dir string, dataDir string) {
 	}
 
 	if cfg.Hostname != "" {
-		if interfaceVersionSupportsHostname(s1v) {
+		if s1v.SupportsHostname() {
 			args = append(args, "--hostname="+cfg.Hostname)
 		} else {
 			log.Printf("warning: --hostname option is not supported by stage1")
