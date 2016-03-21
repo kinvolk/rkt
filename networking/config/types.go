@@ -29,7 +29,8 @@ type Networks struct {
 // Config is a single place where configuration for stage1 networking
 // resides.
 type Config struct {
-	Networks Networks
+	Networks   Networks
+	PluginDirs []string
 }
 
 func newConfig() *Config {
@@ -55,7 +56,8 @@ func (an activeNetsSortableByPath) Swap(i, j int) {
 }
 
 type parserBase struct {
-	configs []*Config
+	configs  []*Config
+	propOpts []map[string]interface{}
 }
 
 func (p *parserBase) getConfig(idx int) *Config {
@@ -63,6 +65,13 @@ func (p *parserBase) getConfig(idx int) *Config {
 		p.configs = append(p.configs, newConfig())
 	}
 	return p.configs[idx]
+}
+
+func (p *parserBase) getPropOpts(idx int) map[string]interface{} {
+	for len(p.propOpts) <= idx {
+		p.propOpts = append(p.propOpts, make(map[string]interface{}))
+	}
+	return p.propOpts[idx]
 }
 
 func (p *parserBase) visited() bool {
@@ -90,6 +99,13 @@ type networkV1JSONParser struct {
 
 var _ baseconfig.Parser = (*networkV1JSONParser)(nil)
 var _ configPropagator = (*networkV1JSONParser)(nil)
+
+type pathsV1JSONParser struct {
+	parserBase
+}
+
+var _ baseconfig.Parser = (*pathsV1JSONParser)(nil)
+var _ configPropagator = (*pathsV1JSONParser)(nil)
 
 // the config type for conf files, implements
 // github.com/coreos/rkt/pkg/config Type

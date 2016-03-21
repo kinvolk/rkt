@@ -109,6 +109,7 @@ func getOldSetup() (*baseconfig.Directory, []configPropagator, error) {
 
 func getNewSetup() (*baseconfig.Directory, []configPropagator, error) {
 	networkV1 := &networkV1JSONParser{}
+	pathsV1 := &pathsV1JSONParser{}
 	dir := common.NewConfigDirectory(common.Stage1CDB)
 	parsers := []*baseconfig.ParserSetup{
 		{
@@ -116,11 +117,20 @@ func getNewSetup() (*baseconfig.Directory, []configPropagator, error) {
 			Version: "v1",
 			Parser:  networkV1,
 		},
+		{
+			Kind:    "paths",
+			Version: "v1",
+			Parser:  pathsV1,
+		},
 	}
 	subdirs := []*baseconfig.SubdirSetup{
 		{
 			Subdir: "net.d",
 			Kinds:  []string{"network"},
+		},
+		{
+			Subdir: "paths.d",
+			Kinds:  []string{"paths"},
 		},
 	}
 	if err := dir.RegisterParsers(parsers); err != nil {
@@ -131,6 +141,7 @@ func getNewSetup() (*baseconfig.Directory, []configPropagator, error) {
 	}
 	props := []configPropagator{
 		networkV1,
+		pathsV1,
 	}
 	return dir, props, nil
 }
