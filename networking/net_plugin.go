@@ -115,6 +115,9 @@ func (e *podEnv) execNetPlugin(cmd string, n *nettypes.ActiveNet, netns string) 
 	if n.Runtime.PluginPath == "" {
 		return nil, fmt.Errorf("Could not find plugin %q", n.Conf.Type)
 	}
+	if len(n.Runtime.CniPaths) == 0 {
+		n.Runtime.CniPaths = e.pluginPaths()
+	}
 
 	vars := [][2]string{
 		{"CNI_COMMAND", cmd},
@@ -122,7 +125,7 @@ func (e *podEnv) execNetPlugin(cmd string, n *nettypes.ActiveNet, netns string) 
 		{"CNI_NETNS", netns},
 		{"CNI_ARGS", n.Runtime.Args},
 		{"CNI_IFNAME", n.Runtime.IfName},
-		{"CNI_PATH", strings.Join(e.pluginPaths(), ":")},
+		{"CNI_PATH", strings.Join(n.Runtime.CniPaths, ":")},
 	}
 
 	stdin := bytes.NewBuffer(n.ConfBytes)

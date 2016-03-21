@@ -30,6 +30,7 @@ type NetInfo struct {
 	NetName    string             `json:"netName"`
 	ConfPath   string             `json:"netConf"`
 	PluginPath string             `json:"pluginPath"`
+	CniPaths   []string           `json:"cniPaths"`
 	IfName     string             `json:"ifName"`
 	IP         net.IP             `json:"ip"`
 	Args       string             `json:"args"`
