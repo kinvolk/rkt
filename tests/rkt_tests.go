@@ -622,6 +622,10 @@ var gpgkeys = []*gpgkey{
 		fingerprint: "585091E3",
 		path:        "key2.gpg",
 	},
+	{
+		fingerprint: "7D526AD4",
+		path:        "key3.gpg",
+	},
 }
 
 func getGPGKey(t *testing.T, keyIndex int) *gpgkey {
