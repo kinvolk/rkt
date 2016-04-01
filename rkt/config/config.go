@@ -150,7 +150,7 @@ func GetConfigFrom(dirs ...string) (*Config, error) {
 }
 
 func getConfigSetup() (*configSetup, error) {
-	d := common.NewConfigDirectory(common.CDB)
+	d := common.NewConfigDirectory(common.DeprecatedCDB)
 	authV1 := &authV1JsonParser{}
 	dockerAuthV1 := &dockerAuthV1JsonParser{}
 	pathsV1 := &pathsV1JsonParser{}

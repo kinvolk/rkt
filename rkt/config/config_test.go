@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	CDB = common.CDB
+	CDB = common.DeprecatedCDB
 )
 
 type cfgFile struct {

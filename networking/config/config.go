@@ -66,7 +66,7 @@ func getPodConfigSetup() (*configSetup, error) {
 
 // this function should be considered frozen
 func getOldSetup() (*baseconfig.Directory, []configPropagator, error) {
-	dir := baseconfig.NewDirectory(common.CDB, &oldConfJSON{})
+	dir := baseconfig.NewDirectory(common.DeprecatedCDB, &oldConfJSON{})
 	parser := &oldConfJSONParser{}
 	if err := dir.RegisterParser("old-conf", "old-conf", parser); err != nil {
 		return nil, nil, err

@@ -23,11 +23,13 @@ import (
 
 const (
 	// Configuration directory basenames, refer to the docs of
-	// pkg/config to learn about their meaning. For current
-	// config, CDB is empty, because the configuration subdirs
+	// pkg/config to learn about their meaning. For deprecated
+	// config, CDB is empty, because its configuration subdirs
 	// (auth.d, paths.d, etc.) are direct subdirectories of a
 	// toplevel config directory (/etc/rkt, /usr/lib/rkt, etc.).
-	CDB = ""
+	DeprecatedCDB = ""
+	Stage0CDB     = "stage0-cfg"
+	Stage1CDB     = "stage1-cfg"
 )
 
 func NewConfigDirectory(cdb string) *baseconfig.Directory {
