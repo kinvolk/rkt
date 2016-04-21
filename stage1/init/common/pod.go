@@ -302,20 +302,25 @@ func appToSystemd(p *stage1commontypes.Pod, ra *schema.RuntimeApp, interactive b
 		return errwrap.Wrap(errors.New("unable to write environment file"), err)
 	}
 
-	u, g, err := parseUserGroup(p, ra, privateUsers)
-	if err != nil {
-		return err
-	}
+	/*
+		u, g, err := parseUserGroup(p, ra, privateUsers)
+		if err != nil {
+			return err
+		}
 
-	execWrap := []string{"/appexec", common.RelAppRootfsPath(appName), workDir, RelEnvFilePath(appName),
-		strconv.Itoa(u), generateGidArg(g, app.SupplementaryGIDs), "--"}
-	execStart := quoteExec(append(execWrap, app.Exec...))
+		execWrap := []string{"/appexec", common.RelAppRootfsPath(appName), workDir, RelEnvFilePath(appName),
+			strconv.Itoa(u), generateGidArg(g, app.SupplementaryGIDs), "--"}
+		execStart := quoteExec(append(execWrap, app.Exec...))
+	*/
+	execStart := quoteExec(app.Exec)
 	opts := []*unit.UnitOption{
 		unit.NewUnitOption("Unit", "Description", fmt.Sprintf("Application=%v Image=%v", appName, imgName)),
 		unit.NewUnitOption("Unit", "DefaultDependencies", "false"),
 		unit.NewUnitOption("Unit", "Wants", fmt.Sprintf("reaper-%s.service", appName)),
 		unit.NewUnitOption("Service", "Restart", "no"),
 		unit.NewUnitOption("Service", "ExecStart", execStart),
+		unit.NewUnitOption("Service", "RootDirectory", common.RelAppRootfsPath(appName)),
+		unit.NewUnitOption("Service", "WorkingDirectory", workDir),
 		unit.NewUnitOption("Service", "User", "0"),
 		unit.NewUnitOption("Service", "Group", "0"),
 	}
@@ -350,7 +355,7 @@ func appToSystemd(p *stage1commontypes.Pod, ra *schema.RuntimeApp, interactive b
 		default:
 			return fmt.Errorf("unrecognized eventHandler: %v", eh.Name)
 		}
-		exec := quoteExec(append(execWrap, eh.Exec...))
+		exec := quoteExec(eh.Exec)
 		opts = append(opts, unit.NewUnitOption("Service", typ, exec))
 	}
 
@@ -364,6 +369,7 @@ func appToSystemd(p *stage1commontypes.Pod, ra *schema.RuntimeApp, interactive b
 		}
 	}
 
+	var err error
 	for _, i := range app.Isolators {
 		switch v := i.Value().(type) {
 		case *types.ResourceMemory:
