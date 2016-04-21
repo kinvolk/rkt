@@ -321,7 +321,8 @@ func appToSystemd(p *stage1commontypes.Pod, ra *schema.RuntimeApp, interactive b
 		unit.NewUnitOption("Service", "ExecStart", execStart),
 		unit.NewUnitOption("Service", "RootDirectory", common.RelAppRootfsPath(appName)),
 		unit.NewUnitOption("Service", "WorkingDirectory", workDir),
-		unit.NewUnitOption("Service", "ReadOnlyDirectories", "-/dev/shm"),
+		unit.NewUnitOption("Service", "CapabilityBoundingSet", "~CAP_SYS_ADMIN"),
+		unit.NewUnitOption("Service", "ReadOnlyDirectories", "/"),
 		unit.NewUnitOption("Service", "User", "0"),
 		unit.NewUnitOption("Service", "Group", "0"),
 	}
