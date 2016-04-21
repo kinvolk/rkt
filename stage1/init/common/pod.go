@@ -308,6 +308,11 @@ func appToSystemd(p *stage1commontypes.Pod, ra *schema.RuntimeApp, interactive b
 		return errwrap.Wrap(errors.New("unable to write environment file for appexec"), err)
 	}
 
+	u, g, err := parseUserGroup(p, ra, privateUsers)
+	if err != nil {
+		return err
+	}
+
 	execStart := quoteExec(app.Exec)
 	opts := []*unit.UnitOption{
 		unit.NewUnitOption("Unit", "Description", fmt.Sprintf("Application=%v Image=%v", appName, imgName)),
@@ -319,8 +324,8 @@ func appToSystemd(p *stage1commontypes.Pod, ra *schema.RuntimeApp, interactive b
 		unit.NewUnitOption("Service", "WorkingDirectory", workDir),
 		unit.NewUnitOption("Service", "EnvironmentFile", RelEnvFilePathSystemd(appName)),
 		unit.NewUnitOption("Service", "CapabilityBoundingSet", "~CAP_SYS_ADMIN"),
-		unit.NewUnitOption("Service", "User", "0"),
-		unit.NewUnitOption("Service", "Group", "0"),
+		unit.NewUnitOption("Service", "User", strconv.Itoa(u)),
+		unit.NewUnitOption("Service", "Group", strconv.Itoa(g)),
 	}
 
 	if interactive {
@@ -367,7 +372,6 @@ func appToSystemd(p *stage1commontypes.Pod, ra *schema.RuntimeApp, interactive b
 		}
 	}
 
-	var err error
 	for _, i := range app.Isolators {
 		switch v := i.Value().(type) {
 		case *types.ResourceMemory:
