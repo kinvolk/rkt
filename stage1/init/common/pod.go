@@ -60,35 +60,21 @@ var (
 		"HOME":    "/root",
 	}
 
-	// The list of default capabilities inside systemd-nspawn pod is available
-	// here: https://www.freedesktop.org/software/systemd/man/systemd-nspawn.html
-	nspawnCapabilities, _ = types.NewLinuxCapabilitiesRetainSet([]string{
+	appCapabilities, _ = types.NewLinuxCapabilitiesRetainSet([]string{
+		"CAP_AUDIT_WRITE",
 		"CAP_CHOWN",
 		"CAP_DAC_OVERRIDE",
-		"CAP_DAC_READ_SEARCH",
-		"CAP_FOWNER",
 		"CAP_FSETID",
-		"CAP_IPC_OWNER",
+		"CAP_FOWNER",
 		"CAP_KILL",
-		"CAP_LEASE",
-		"CAP_LINUX_IMMUTABLE",
-		"CAP_NET_BIND_SERVICE",
-		"CAP_NET_BROADCAST",
-		"CAP_NET_RAW",
-		"CAP_SETGID",
-		"CAP_SETFCAP",
-		"CAP_SETPCAP",
-		"CAP_SETUID",
-		"CAP_SYS_ADMIN",
-		"CAP_SYS_CHROOT",
-		"CAP_SYS_NICE",
-		"CAP_SYS_PTRACE",
-		"CAP_SYS_TTY_CONFIG",
-		"CAP_SYS_RESOURCE",
-		"CAP_SYS_BOOT",
-		"CAP_AUDIT_WRITE",
-		"CAP_AUDIT_CONTROL",
 		"CAP_MKNOD",
+		"CAP_NET_RAW",
+		"CAP_NET_BIND_SERVICE",
+		"CAP_SETUID",
+		"CAP_SETGID",
+		"CAP_SETPCAP",
+		"CAP_SETFCAP",
+		"CAP_SYS_CHROOT",
 	}...)
 )
 
@@ -323,7 +309,6 @@ func appToSystemd(p *stage1commontypes.Pod, ra *schema.RuntimeApp, interactive b
 		unit.NewUnitOption("Service", "RootDirectory", common.RelAppRootfsPath(appName)),
 		unit.NewUnitOption("Service", "WorkingDirectory", workDir),
 		unit.NewUnitOption("Service", "EnvironmentFile", RelEnvFilePathSystemd(appName)),
-		unit.NewUnitOption("Service", "CapabilityBoundingSet", "~CAP_SYS_ADMIN"),
 		unit.NewUnitOption("Service", "User", strconv.Itoa(u)),
 		unit.NewUnitOption("Service", "Group", strconv.Itoa(g)),
 	}
@@ -338,12 +323,10 @@ func appToSystemd(p *stage1commontypes.Pod, ra *schema.RuntimeApp, interactive b
 		opts = append(opts, unit.NewUnitOption("Service", "SyslogIdentifier", filepath.Base(app.Exec[0])))
 	}
 
-	if flavor == "kvm" {
-		capabilities := append(app.Isolators, nspawnCapabilities.AsIsolator())
-		capabilitiesStr := GetAppCapabilities(capabilities)
+	capabilities := append(app.Isolators, appCapabilities.AsIsolator())
+	capabilitiesStr := GetAppCapabilities(capabilities)
 
-		opts = append(opts, unit.NewUnitOption("Service", "CapabilityBoundingSet", strings.Join(capabilitiesStr, " ")))
-	}
+	opts = append(opts, unit.NewUnitOption("Service", "CapabilityBoundingSet", strings.Join(capabilitiesStr, " ")))
 
 	// When an app fails, we shut down the pod
 	opts = append(opts, unit.NewUnitOption("Unit", "OnFailure", "halt.target"))
