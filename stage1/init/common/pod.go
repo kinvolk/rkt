@@ -318,7 +318,6 @@ func appToSystemd(p *stage1commontypes.Pod, ra *schema.RuntimeApp, interactive b
 		unit.NewUnitOption("Service", "RootDirectory", common.RelAppRootfsPath(appName)),
 		unit.NewUnitOption("Service", "WorkingDirectory", workDir),
 		unit.NewUnitOption("Service", "EnvironmentFile", RelEnvFilePathSystemd(appName)),
-		unit.NewUnitOption("Service", "PassEnvironment", "LISTEN_FDS, LISTEN_PID"),
 		unit.NewUnitOption("Service", "CapabilityBoundingSet", "~CAP_SYS_ADMIN"),
 		unit.NewUnitOption("Service", "User", "0"),
 		unit.NewUnitOption("Service", "Group", "0"),
