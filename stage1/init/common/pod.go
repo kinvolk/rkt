@@ -298,20 +298,16 @@ func appToSystemd(p *stage1commontypes.Pod, ra *schema.RuntimeApp, interactive b
 		env.Set("AC_METADATA_URL", p.MetadataServiceURL)
 	}
 
-	if err := writeEnvFile(p, env, appName, privateUsers); err != nil {
-		return errwrap.Wrap(errors.New("unable to write environment file"), err)
+	envFilePath := EnvFilePathSystemd(p.Root, appName)
+	if err := writeEnvFile(p, env, appName, privateUsers, '\n', envFilePath); err != nil {
+		return errwrap.Wrap(errors.New("unable to write environment file for systemd"), err)
 	}
 
-	/*
-		u, g, err := parseUserGroup(p, ra, privateUsers)
-		if err != nil {
-			return err
-		}
+	envFilePath = EnvFilePath(p.Root, appName)
+	if err := writeEnvFile(p, env, appName, privateUsers, '\000', envFilePath); err != nil {
+		return errwrap.Wrap(errors.New("unable to write environment file for appexec"), err)
+	}
 
-		execWrap := []string{"/appexec", common.RelAppRootfsPath(appName), workDir, RelEnvFilePath(appName),
-			strconv.Itoa(u), generateGidArg(g, app.SupplementaryGIDs), "--"}
-		execStart := quoteExec(append(execWrap, app.Exec...))
-	*/
 	execStart := quoteExec(app.Exec)
 	opts := []*unit.UnitOption{
 		unit.NewUnitOption("Unit", "Description", fmt.Sprintf("Application=%v Image=%v", appName, imgName)),
@@ -321,8 +317,9 @@ func appToSystemd(p *stage1commontypes.Pod, ra *schema.RuntimeApp, interactive b
 		unit.NewUnitOption("Service", "ExecStart", execStart),
 		unit.NewUnitOption("Service", "RootDirectory", common.RelAppRootfsPath(appName)),
 		unit.NewUnitOption("Service", "WorkingDirectory", workDir),
+		// TODO check socket activation, do we need to forward LISTEN_{FDS,PID}?
+		unit.NewUnitOption("Service", "EnvironmentFile", RelEnvFilePathSystemd(appName)),
 		unit.NewUnitOption("Service", "CapabilityBoundingSet", "~CAP_SYS_ADMIN"),
-		unit.NewUnitOption("Service", "ReadOnlyDirectories", "/"),
 		unit.NewUnitOption("Service", "User", "0"),
 		unit.NewUnitOption("Service", "Group", "0"),
 	}
@@ -582,17 +579,17 @@ func writeShutdownService(p *stage1commontypes.Pod) error {
 // writeEnvFile creates an environment file for given app name, the minimum
 // required environment variables by the appc spec will be set to sensible
 // defaults here if they're not provided by env.
-func writeEnvFile(p *stage1commontypes.Pod, env types.Environment, appName types.ACName, privateUsers string) error {
+func writeEnvFile(p *stage1commontypes.Pod, env types.Environment, appName types.ACName, privateUsers string, separator byte, envFilePath string) error {
 	ef := bytes.Buffer{}
 
 	for dk, dv := range defaultEnv {
 		if _, exists := env.Get(dk); !exists {
-			fmt.Fprintf(&ef, "%s=%s\000", dk, dv)
+			fmt.Fprintf(&ef, "%s=%s%c", dk, dv, separator)
 		}
 	}
 
 	for _, e := range env {
-		fmt.Fprintf(&ef, "%s=%s\000", e.Name, e.Value)
+		fmt.Fprintf(&ef, "%s=%s%c", e.Name, e.Value, separator)
 	}
 
 	uidRange := uid.NewBlankUidRange()
@@ -600,7 +597,6 @@ func writeEnvFile(p *stage1commontypes.Pod, env types.Environment, appName types
 		return err
 	}
 
-	envFilePath := EnvFilePath(p.Root, appName)
 	if err := ioutil.WriteFile(envFilePath, ef.Bytes(), 0644); err != nil {
 		return err
 	}
