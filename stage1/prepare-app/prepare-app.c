@@ -135,7 +135,7 @@ static void mount_sys(const char *root)
 
 	pexit_if(statfs("/sys/fs/cgroup", &fs) != 0,
 	         "Cannot statfs /sys/fs/cgroup");
-	if (fs.f_type == (typeof(fs.f_type)) CGROUP2_SUPER_MAGIC) {
+	if (fs.f_type != (typeof(fs.f_type)) CGROUP2_SUPER_MAGIC) {
 		/* With the unified cgroup hierarchy, recursive bind mounts
 		 * are fine. */
 		exit_if(snprintf(to, sizeof(to), "%s/%s", root, "sys") >= sizeof(to),
