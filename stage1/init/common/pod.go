@@ -288,16 +288,15 @@ func generateSysusers(p *stage1commontypes.Pod, ra *schema.RuntimeApp, uid_ int,
 	}
 
 	// Create the Unix user and group
-	var username, groupname string
 	var sysusersConf string
 
-	if needUIDGen {
-		username = "u" + strconv.Itoa(uid_)
-		sysusersConf = fmt.Sprintf("u %s %d \"%s\"\n", username, uid_, username)
-	}
 	if needGIDGen {
-		groupname = "g" + strconv.Itoa(gid_)
-		sysusersConf += fmt.Sprintf("g %s %d\n", groupname, gid_)
+		groupname := "g" + strconv.Itoa(gid_)
+		sysusersConf = fmt.Sprintf("g %s %d\n", groupname, gid_)
+	}
+	if needUIDGen {
+		username := "u" + strconv.Itoa(uid_)
+		sysusersConf += fmt.Sprintf("u %s %d \"%s\"\n", username, uid_, username)
 	}
 
 	if err := ioutil.WriteFile(path.Join(common.Stage1RootfsPath(p.Root), "usr/lib/sysusers.d", ServiceUnitName(appName)+".conf"),
