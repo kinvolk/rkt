@@ -263,7 +263,6 @@ func findHostPort(pm schema.PodManifest, name types.ACName) uint {
 }
 
 func generateSysusers(p *stage1commontypes.Pod, ra *schema.RuntimeApp, uid_ int, gid_ int) error {
-	app := ra.App
 	appName := ra.Name
 
 	var needUIDGen, needGIDGen bool
@@ -271,21 +270,13 @@ func generateSysusers(p *stage1commontypes.Pod, ra *schema.RuntimeApp, uid_ int,
 	_, err := passwd.LookupUserFromUid(uid_,
 		filepath.Join(common.AppRootfsPath(p.Root, appName), "etc/passwd"))
 	if err != nil {
-		if err == passwd.ErrUserNotFound {
-			needUIDGen = true
-		} else {
-			return errwrap.Wrap(fmt.Errorf("cannot lookup user %q", app.User), err)
-		}
+		needUIDGen = true
 	}
 
 	_, err = group.LookupGroupFromGid(gid_,
 		filepath.Join(common.AppRootfsPath(p.Root, appName), "etc/group"))
 	if err != nil {
-		if err == group.ErrGroupNotFound {
-			needGIDGen = true
-		} else {
-			return errwrap.Wrap(fmt.Errorf("cannot lookup group %q", app.Group), err)
-		}
+		needGIDGen = true
 	}
 
 	if !needUIDGen && !needGIDGen {
