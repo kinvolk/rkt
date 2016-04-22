@@ -38,23 +38,6 @@ type Group struct {
 	Users []string
 }
 
-var ErrGroupNotFound = errors.New("group not found")
-
-func LookupGroupFromGid(gid int, groupFile string) (group string, err error) {
-	groups, err := parseGroupFile(groupFile)
-	if err != nil {
-		return "", errwrap.Wrap(fmt.Errorf("error parsing %q file", groupFile), err)
-	}
-
-	for _, g := range groups {
-		if g.Gid == gid {
-			return g.Name, nil
-		}
-	}
-
-	return "", ErrGroupNotFound
-}
-
 // LookupGid reads the group file specified by groupFile, and returns the gid of the group
 // specified by groupName.
 func LookupGidFromFile(groupName, groupFile string) (gid int, err error) {

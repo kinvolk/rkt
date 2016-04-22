@@ -263,20 +263,6 @@ func findHostPort(pm schema.PodManifest, name types.ACName) uint {
 	return port
 }
 
-func uidInPasswdFile(p *stage1commontypes.Pod, appName types.ACName, uid_ int) bool {
-	_, err := passwd.LookupUserFromUid(uid_,
-		filepath.Join(common.AppRootfsPath(p.Root, appName), "etc/passwd"))
-
-	return err == nil
-}
-
-func gidInGroupFile(p *stage1commontypes.Pod, appName types.ACName, gid_ int) bool {
-	_, err := group.LookupGroupFromGid(gid_,
-		filepath.Join(common.AppRootfsPath(p.Root, appName), "etc/group"))
-
-	return err == nil
-}
-
 func generateSysusers(p *stage1commontypes.Pod, ra *schema.RuntimeApp, uid_ int, gid_ int) error {
 	app := ra.App
 	appName := ra.Name
@@ -291,16 +277,12 @@ func generateSysusers(p *stage1commontypes.Pod, ra *schema.RuntimeApp, uid_ int,
 	var sysusersConf []string
 
 	for _, g := range gids {
-		if !gidInGroupFile(p, appName, g) {
-			groupname := "gen" + strconv.Itoa(g)
-			sysusersConf = append(sysusersConf, fmt.Sprintf("g %s %d\n", groupname, g))
-		}
+		groupname := "gen" + strconv.Itoa(g)
+		sysusersConf = append(sysusersConf, fmt.Sprintf("g %s %d\n", groupname, g))
 	}
 
-	if !uidInPasswdFile(p, appName, uid_) {
-		username := "gen" + strconv.Itoa(uid_)
-		sysusersConf = append(sysusersConf, fmt.Sprintf("u %s %d \"%s\"\n", username, uid_, username))
-	}
+	username := "gen" + strconv.Itoa(uid_)
+	sysusersConf = append(sysusersConf, fmt.Sprintf("u %s %d \"%s\"\n", username, uid_, username))
 
 	if err := ioutil.WriteFile(path.Join(common.Stage1RootfsPath(p.Root), "usr/lib/sysusers.d", ServiceUnitName(appName)+".conf"),
 		[]byte(strings.Join(sysusersConf, "\n")), 0640); err != nil {

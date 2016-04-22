@@ -41,23 +41,6 @@ type User struct {
 	Interpreter string
 }
 
-var ErrUserNotFound = errors.New("user not found")
-
-func LookupUserFromUid(uid int, passwdFile string) (user string, err error) {
-	users, err := parsePasswdFile(passwdFile)
-	if err != nil {
-		return "", errwrap.Wrap(fmt.Errorf("error parsing %q file", passwdFile), err)
-	}
-
-	for _, u := range users {
-		if u.Uid == uid {
-			return u.Name, nil
-		}
-	}
-
-	return "", ErrUserNotFound
-}
-
 // LookupUidFromFile reads the passwd file specified by passwdFile, and returns the
 // uid of the user specified by userName.
 func LookupUidFromFile(userName, passwdFile string) (uid int, err error) {
