@@ -158,7 +158,7 @@ func WritePrepareAppTemplate(p *stage1commontypes.Pod) error {
 		unit.NewUnitOption("Service", "ExecStart", "/prepare-app %I"),
 		unit.NewUnitOption("Service", "User", "0"),
 		unit.NewUnitOption("Service", "Group", "0"),
-		unit.NewUnitOption("Service", "CapabilityBoundingSet", "CAP_SYS_ADMIN CAP_DAC_OVERRIDE"),
+		unit.NewUnitOption("Service", "CapabilityBoundingSet", "CAP_NET_ADMIN CAP_SYS_ADMIN CAP_DAC_OVERRIDE"),
 	}
 
 	unitsPath := filepath.Join(common.Stage1RootfsPath(p.Root), UnitsDir)
