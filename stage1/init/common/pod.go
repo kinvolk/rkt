@@ -292,13 +292,13 @@ func generateSysusers(p *stage1commontypes.Pod, ra *schema.RuntimeApp, uid_ int,
 
 	for _, g := range gids {
 		if !gidInGroupFile(p, appName, g) {
-			groupname := "g" + strconv.Itoa(g)
+			groupname := "gen" + strconv.Itoa(g)
 			sysusersConf = append(sysusersConf, fmt.Sprintf("g %s %d\n", groupname, g))
 		}
 	}
 
 	if !uidInPasswdFile(p, appName, uid_) {
-		username := "u" + strconv.Itoa(uid_)
+		username := "gen" + strconv.Itoa(uid_)
 		sysusersConf = append(sysusersConf, fmt.Sprintf("u %s %d \"%s\"\n", username, uid_, username))
 	}
 
