@@ -262,6 +262,61 @@ func findHostPort(pm schema.PodManifest, name types.ACName) uint {
 	return port
 }
 
+func generateSysusers(p *stage1commontypes.Pod, ra *schema.RuntimeApp, uid_ int, gid_ int) error {
+	app := ra.App
+	appName := ra.Name
+
+	var needUIDGen, needGIDGen bool
+
+	_, err := passwd.LookupUserFromUid(uid_,
+		filepath.Join(common.AppRootfsPath(p.Root, appName), "etc/passwd"))
+	if err != nil {
+		if err == passwd.ErrUserNotFound {
+			needUIDGen = true
+		} else {
+			return errwrap.Wrap(fmt.Errorf("cannot lookup user %q", app.User), err)
+		}
+	}
+
+	_, err = group.LookupGroupFromGid(gid_,
+		filepath.Join(common.AppRootfsPath(p.Root, appName), "etc/group"))
+	if err != nil {
+		if err == group.ErrGroupNotFound {
+			needGIDGen = true
+		} else {
+			return errwrap.Wrap(fmt.Errorf("cannot lookup group %q", app.Group), err)
+		}
+	}
+
+	if !needUIDGen && !needGIDGen {
+		return nil
+	}
+
+	if err := os.MkdirAll(path.Join(common.Stage1RootfsPath(p.Root), "usr/lib/sysusers.d"), 0755); err != nil {
+		return err
+	}
+
+	// Create the Unix user and group
+	var username, groupname string
+	var sysusersConf string
+
+	if needUIDGen {
+		username = "u" + strconv.Itoa(uid_)
+		sysusersConf = fmt.Sprintf("u %s %d \"%s\"\n", username, uid_, username)
+	}
+	if needGIDGen {
+		groupname = "g" + strconv.Itoa(gid_)
+		sysusersConf += fmt.Sprintf("g %s %d\n", groupname, gid_)
+	}
+
+	if err := ioutil.WriteFile(path.Join(common.Stage1RootfsPath(p.Root), "usr/lib/sysusers.d", ServiceUnitName(appName)+".conf"),
+		[]byte(sysusersConf), 0640); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // appToSystemd transforms the provided RuntimeApp+ImageManifest into systemd units
 func appToSystemd(p *stage1commontypes.Pod, ra *schema.RuntimeApp, interactive bool, flavor string, privateUsers string) error {
 	app := ra.App
@@ -297,6 +352,10 @@ func appToSystemd(p *stage1commontypes.Pod, ra *schema.RuntimeApp, interactive b
 	u, g, err := parseUserGroup(p, ra, privateUsers)
 	if err != nil {
 		return err
+	}
+
+	if err := generateSysusers(p, ra, u, g); err != nil {
+		return errwrap.Wrap(errors.New("unable to generate sysusers"), err)
 	}
 
 	execStart := quoteExec(app.Exec)
@@ -420,6 +479,9 @@ func appToSystemd(p *stage1commontypes.Pod, ra *schema.RuntimeApp, interactive b
 
 	opts = append(opts, unit.NewUnitOption("Unit", "Requires", InstantiatedPrepareAppUnitName(appName)))
 	opts = append(opts, unit.NewUnitOption("Unit", "After", InstantiatedPrepareAppUnitName(appName)))
+
+	opts = append(opts, unit.NewUnitOption("Unit", "Requires", "sysusers.service"))
+	opts = append(opts, unit.NewUnitOption("Unit", "After", "sysusers.service"))
 
 	file, err := os.OpenFile(ServiceUnitPath(p.Root, appName), os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
