@@ -23,6 +23,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -307,6 +308,31 @@ func generateSysusers(p *stage1commontypes.Pod, ra *schema.RuntimeApp, uid_ int,
 	return nil
 }
 
+func lookupStage2Path(p *stage1commontypes.Pod, appName types.ACName, bin string) (string, error) {
+	stage2Dir := common.AppRootfsPath(p.Root, appName)
+
+	curPath := os.Getenv("PATH")
+	pathDirs := strings.Split(curPath, ":")
+
+	var stage2PathDirs []string
+	for _, p := range pathDirs {
+		stage2PathDirs = append(stage2PathDirs, filepath.Join(stage2Dir, p))
+	}
+
+	stage2Path := strings.Join(stage2PathDirs, ":")
+	if err := os.Setenv("PATH", stage2Path); err != nil {
+		return "", errwrap.Wrap(errors.New("unable to set PATH"), err)
+	}
+	defer os.Setenv("PATH", curPath)
+
+	binPath, err := exec.LookPath(bin)
+	if err != nil {
+		return "", errwrap.Wrap(fmt.Errorf("error looking up the %q", bin), err)
+	}
+
+	return strings.TrimPrefix(binPath, stage2Dir), nil
+}
+
 // appToSystemd transforms the provided RuntimeApp+ImageManifest into systemd units
 func appToSystemd(p *stage1commontypes.Pod, ra *schema.RuntimeApp, interactive bool, flavor string, privateUsers string) error {
 	app := ra.App
@@ -348,7 +374,15 @@ func appToSystemd(p *stage1commontypes.Pod, ra *schema.RuntimeApp, interactive b
 		return errwrap.Wrap(errors.New("unable to generate sysusers"), err)
 	}
 
-	execStart := quoteExec(app.Exec)
+	binPath := app.Exec[0]
+	if !filepath.IsAbs(binPath) {
+		binPath, err = lookupStage2Path(p, appName, binPath)
+		if err != nil {
+			return err
+		}
+	}
+	execStartUnquoted := append([]string{binPath}, app.Exec[1:]...)
+	execStart := quoteExec(execStartUnquoted)
 	opts := []*unit.UnitOption{
 		unit.NewUnitOption("Unit", "Description", fmt.Sprintf("Application=%v Image=%v", appName, imgName)),
 		unit.NewUnitOption("Unit", "DefaultDependencies", "false"),
