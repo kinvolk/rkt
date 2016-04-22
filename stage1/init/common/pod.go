@@ -362,6 +362,7 @@ func appToSystemd(p *stage1commontypes.Pod, ra *schema.RuntimeApp, interactive b
 		return errwrap.Wrap(errors.New("unable to write environment file for systemd"), err)
 	}
 
+	// TODO: make appexec use the same format as systemd
 	envFilePath = EnvFilePath(p.Root, appName)
 	if err := writeEnvFile(p, env, appName, privateUsers, '\000', envFilePath); err != nil {
 		return errwrap.Wrap(errors.New("unable to write environment file for appexec"), err)
@@ -384,13 +385,13 @@ func appToSystemd(p *stage1commontypes.Pod, ra *schema.RuntimeApp, interactive b
 		}
 	}
 
-	execStartUnquoted := append([]string{binPath}, app.Exec[1:]...)
-	execStart := quoteExec(execStartUnquoted)
-
 	var supplementaryGroups []string
 	for _, g := range app.SupplementaryGIDs {
 		supplementaryGroups = append(supplementaryGroups, strconv.Itoa(g))
 	}
+
+	execStart := append([]string{binPath}, app.Exec[1:]...)
+	execStart = quoteExec(execStartUnquoted)
 	opts := []*unit.UnitOption{
 		unit.NewUnitOption("Unit", "Description", fmt.Sprintf("Application=%v Image=%v", appName, imgName)),
 		unit.NewUnitOption("Unit", "DefaultDependencies", "false"),
