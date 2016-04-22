@@ -263,45 +263,47 @@ func findHostPort(pm schema.PodManifest, name types.ACName) uint {
 	return port
 }
 
-func generateSysusers(p *stage1commontypes.Pod, ra *schema.RuntimeApp, uid_ int, gid_ int) error {
-	appName := ra.Name
-
-	var needUIDGen, needGIDGen bool
-
+func uidInPasswdFile(p *stage1commontypes.Pod, appName types.ACName, uid_ int) bool {
 	_, err := passwd.LookupUserFromUid(uid_,
 		filepath.Join(common.AppRootfsPath(p.Root, appName), "etc/passwd"))
-	if err != nil {
-		needUIDGen = true
-	}
 
-	_, err = group.LookupGroupFromGid(gid_,
+	return err == nil
+}
+
+func gidInGroupFile(p *stage1commontypes.Pod, appName types.ACName, gid_ int) bool {
+	_, err := group.LookupGroupFromGid(gid_,
 		filepath.Join(common.AppRootfsPath(p.Root, appName), "etc/group"))
-	if err != nil {
-		needGIDGen = true
-	}
 
-	if !needUIDGen && !needGIDGen {
-		return nil
-	}
+	return err == nil
+}
+
+func generateSysusers(p *stage1commontypes.Pod, ra *schema.RuntimeApp, uid_ int, gid_ int) error {
+	app := ra.App
+	appName := ra.Name
 
 	if err := os.MkdirAll(path.Join(common.Stage1RootfsPath(p.Root), "usr/lib/sysusers.d"), 0755); err != nil {
 		return err
 	}
 
-	// Create the Unix user and group
-	var sysusersConf string
+	gids := append(app.SupplementaryGIDs, gid_)
 
-	if needGIDGen {
-		groupname := "g" + strconv.Itoa(gid_)
-		sysusersConf = fmt.Sprintf("g %s %d\n", groupname, gid_)
+	// Create the Unix user and group
+	var sysusersConf []string
+
+	for _, g := range gids {
+		if !gidInGroupFile(p, appName, g) {
+			groupname := "g" + strconv.Itoa(g)
+			sysusersConf = append(sysusersConf, fmt.Sprintf("g %s %d\n", groupname, g))
+		}
 	}
-	if needUIDGen {
+
+	if !uidInPasswdFile(p, appName, uid_) {
 		username := "u" + strconv.Itoa(uid_)
-		sysusersConf += fmt.Sprintf("u %s %d \"%s\"\n", username, uid_, username)
+		sysusersConf = append(sysusersConf, fmt.Sprintf("u %s %d \"%s\"\n", username, uid_, username))
 	}
 
 	if err := ioutil.WriteFile(path.Join(common.Stage1RootfsPath(p.Root), "usr/lib/sysusers.d", ServiceUnitName(appName)+".conf"),
-		[]byte(sysusersConf), 0640); err != nil {
+		[]byte(strings.Join(sysusersConf, "\n")), 0640); err != nil {
 		return err
 	}
 
@@ -381,8 +383,14 @@ func appToSystemd(p *stage1commontypes.Pod, ra *schema.RuntimeApp, interactive b
 			return err
 		}
 	}
+
 	execStartUnquoted := append([]string{binPath}, app.Exec[1:]...)
 	execStart := quoteExec(execStartUnquoted)
+
+	var supplementaryGroups []string
+	for _, g := range app.SupplementaryGIDs {
+		supplementaryGroups = append(supplementaryGroups, strconv.Itoa(g))
+	}
 	opts := []*unit.UnitOption{
 		unit.NewUnitOption("Unit", "Description", fmt.Sprintf("Application=%v Image=%v", appName, imgName)),
 		unit.NewUnitOption("Unit", "DefaultDependencies", "false"),
@@ -394,6 +402,7 @@ func appToSystemd(p *stage1commontypes.Pod, ra *schema.RuntimeApp, interactive b
 		unit.NewUnitOption("Service", "EnvironmentFile", RelEnvFilePathSystemd(appName)),
 		unit.NewUnitOption("Service", "User", strconv.Itoa(u)),
 		unit.NewUnitOption("Service", "Group", strconv.Itoa(g)),
+		unit.NewUnitOption("Service", "SupplementaryGroups", strings.Join(supplementaryGroups, " ")),
 	}
 
 	if interactive {
