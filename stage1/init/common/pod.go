@@ -467,6 +467,8 @@ func appToSystemd(p *stage1commontypes.Pod, ra *schema.RuntimeApp, interactive b
 		unit.NewUnitOption("Service", "Group", strconv.Itoa(g)),
 		unit.NewUnitOption("Service", "SupplementaryGroups", strings.Join(supplementaryGroups, " ")),
 		unit.NewUnitOption("Service", "CapabilityBoundingSet", strings.Join(capabilitiesStr, " ")),
+		unit.NewUnitOption("Service", "ReadWriteDirectories", "/"),
+		unit.NewUnitOption("Service", "MountFlags", "slave"),
 	}
 
 	if interactive {
