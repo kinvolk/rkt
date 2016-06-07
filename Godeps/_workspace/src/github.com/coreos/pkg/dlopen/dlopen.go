@@ -42,7 +42,9 @@ func GetHandle(libs []string) (*LibHandle, error) {
 	for _, name := range libs {
 		libname := C.CString(name)
 		defer C.free(unsafe.Pointer(libname))
+		fmt.Println("About to dlopen", name)
 		handle := C.dlopen(libname, C.RTLD_LAZY)
+		fmt.Println("dlopen'd, address =", handle)
 		if handle != nil {
 			h := &LibHandle{
 				Handle:  handle,
@@ -72,7 +74,9 @@ func (l *LibHandle) GetSymbolPointer(symbol string) (unsafe.Pointer, error) {
 // Close closes a LibHandle.
 func (l *LibHandle) Close() error {
 	C.dlerror()
+	fmt.Println("About to dlclose", l.Libname, "address =", l.Handle)
 	C.dlclose(l.Handle)
+	fmt.Println("Closed libsystemd")
 	e := C.dlerror()
 	if e != nil {
 		return fmt.Errorf("error closing %v: %v", l.Libname, errors.New(C.GoString(e)))
