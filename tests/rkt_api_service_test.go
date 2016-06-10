@@ -631,6 +631,7 @@ func NewAPIServiceCgroupTest() testutils.Test {
 			checkPodDetails(t, ctx, p)
 		}
 
+		time.Sleep(12 * time.Second)
 		// Terminate the pod.
 		if err := child.SendLine("Good bye"); err != nil {
 			t.Fatalf("Failed to send message to the pod: %v", err)
