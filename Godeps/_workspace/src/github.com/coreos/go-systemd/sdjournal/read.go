@@ -127,9 +127,9 @@ func (r *JournalReader) Read(b []byte) (int, error) {
 	}
 
 	// Copy and return the message
-	copy(b, []byte(msg))
+	sz := copy(b, []byte(msg))
 
-	return len(msg), nil
+	return sz, nil
 }
 
 // Close closes the JournalReader's handle to the journal.
