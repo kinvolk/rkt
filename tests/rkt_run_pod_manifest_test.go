@@ -18,11 +18,8 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
-	"path"
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/appc/spec/schema"
@@ -33,29 +30,11 @@ import (
 	"github.com/coreos/rkt/common/cgroup"
 )
 
-const baseAppName = "rkt-inspect"
-
 func intP(i int) *int {
 	return &i
 }
 func stringP(s string) *string {
 	return &s
-}
-
-func verifyHostFile(t *testing.T, tmpdir, filename string, i int, expectedResult string) {
-	filePath := path.Join(tmpdir, filename)
-	defer os.Remove(filePath)
-
-	// Verify the file is written to host.
-	if strings.Contains(expectedResult, "host:") {
-		data, err := ioutil.ReadFile(filePath)
-		if err != nil {
-			t.Fatalf("%d: Cannot read the host file: %v", i, err)
-		}
-		if string(data) != expectedResult {
-			t.Fatalf("%d: Expecting %q in the host file, but saw %q", i, expectedResult, data)
-		}
-	}
 }
 
 func mustNewIsolator(body string) (i types.Isolator) {
@@ -64,11 +43,6 @@ func mustNewIsolator(body string) (i types.Isolator) {
 		panic(err)
 	}
 	return
-}
-
-type imagePatch struct {
-	name    string
-	patches []string
 }
 
 // Test running pod manifests that contains just one app.
@@ -354,7 +328,7 @@ func TestPodManifest(t *testing.T) {
 					},
 				},
 				Volumes: []types.Volume{
-					{"dir1", "host", tmpdir, nil, nil, nil, nil},
+					{"dir1", "host", tmpdir, nil, nil, nil, nil, nil},
 				},
 			},
 			0,
@@ -386,7 +360,7 @@ func TestPodManifest(t *testing.T) {
 					},
 				},
 				Volumes: []types.Volume{
-					{"dir1", "host", tmpdir, nil, nil, nil, nil},
+					{"dir1", "host", tmpdir, nil, nil, nil, nil, nil},
 				},
 			},
 			0,
@@ -417,7 +391,7 @@ func TestPodManifest(t *testing.T) {
 					},
 				},
 				Volumes: []types.Volume{
-					{"dir1", "host", tmpdir, nil, nil, nil, nil},
+					{"dir1", "host", tmpdir, nil, nil, nil, nil, nil},
 				},
 			},
 			1,
@@ -449,7 +423,7 @@ func TestPodManifest(t *testing.T) {
 					},
 				},
 				Volumes: []types.Volume{
-					{"dir1", "host", tmpdir, nil, nil, nil, nil},
+					{"dir1", "host", tmpdir, nil, nil, nil, nil, nil},
 				},
 			},
 			1,
@@ -482,7 +456,7 @@ func TestPodManifest(t *testing.T) {
 					},
 				},
 				Volumes: []types.Volume{
-					{"dir1", "host", tmpdir, &boolTrue, nil, nil, nil},
+					{"dir1", "host", tmpdir, &boolTrue, nil, nil, nil, nil},
 				},
 			},
 			1,
@@ -516,7 +490,7 @@ func TestPodManifest(t *testing.T) {
 					},
 				},
 				Volumes: []types.Volume{
-					{"dir1", "host", tmpdir, &boolTrue, nil, nil, nil},
+					{"dir1", "host", tmpdir, &boolTrue, nil, nil, nil, nil},
 				},
 			},
 			1,
@@ -548,7 +522,7 @@ func TestPodManifest(t *testing.T) {
 					},
 				},
 				Volumes: []types.Volume{
-					{"dir1", "host", tmpdir, nil, nil, nil, nil},
+					{"dir1", "host", tmpdir, nil, nil, nil, nil, nil},
 				},
 			},
 			0,
@@ -581,7 +555,7 @@ func TestPodManifest(t *testing.T) {
 					},
 				},
 				Volumes: []types.Volume{
-					{"dir1", "host", tmpdir, nil, nil, nil, nil},
+					{"dir1", "host", tmpdir, nil, nil, nil, nil, nil},
 				},
 			},
 			0,
@@ -604,7 +578,7 @@ func TestPodManifest(t *testing.T) {
 					{Name: baseAppName},
 				},
 				Volumes: []types.Volume{
-					{"dir1", "host", tmpdir, nil, nil, nil, nil},
+					{"dir1", "host", tmpdir, nil, nil, nil, nil, nil},
 				},
 			},
 			0,
@@ -630,7 +604,7 @@ func TestPodManifest(t *testing.T) {
 					},
 				},
 				Volumes: []types.Volume{
-					{"dir1", "host", tmpdir, nil, nil, nil, nil},
+					{"dir1", "host", tmpdir, nil, nil, nil, nil, nil},
 				},
 			},
 			0,
@@ -655,7 +629,7 @@ func TestPodManifest(t *testing.T) {
 					{Name: baseAppName},
 				},
 				Volumes: []types.Volume{
-					{"dir1", "host", tmpdir, &boolFalse, nil, nil, nil},
+					{"dir1", "host", tmpdir, &boolFalse, nil, nil, nil, nil},
 				},
 			},
 			0,
@@ -679,7 +653,7 @@ func TestPodManifest(t *testing.T) {
 					{Name: baseAppName},
 				},
 				Volumes: []types.Volume{
-					{"dir1", "host", tmpdir, &boolTrue, nil, nil, nil},
+					{"dir1", "host", tmpdir, &boolTrue, nil, nil, nil, nil},
 				},
 			},
 			1,
@@ -706,7 +680,7 @@ func TestPodManifest(t *testing.T) {
 					},
 				},
 				Volumes: []types.Volume{
-					{"dir1", "host", tmpdir, &boolTrue, nil, nil, nil},
+					{"dir1", "host", tmpdir, &boolTrue, nil, nil, nil, nil},
 				},
 			},
 			1,
@@ -816,7 +790,7 @@ func TestPodManifest(t *testing.T) {
 					},
 				},
 				Volumes: []types.Volume{
-					{"dir", "host", tmpdir, nil, nil, nil, nil},
+					{"dir", "host", tmpdir, nil, nil, nil, nil, nil},
 				},
 			},
 			0,
