@@ -300,6 +300,10 @@ func getArgsEnv(p *stage1commontypes.Pod, flavor string, debug bool, n *networki
 		env = append(env, "LD_LIBRARY_PATH="+filepath.Join(common.Stage1RootfsPath(p.Root), "usr/lib"))
 
 	case "src":
+		env = append(env, "LD_LIBRARY_PATH="+filepath.Join(common.Stage1RootfsPath(p.Root), "usr/lib")+
+			":"+filepath.Join(common.Stage1RootfsPath(p.Root), "usr/lib/systemd"))
+
+		args = append(args, filepath.Join(common.Stage1RootfsPath(p.Root), "/lib64/ld-linux-x86-64.so.2"))
 		args = append(args, filepath.Join(common.Stage1RootfsPath(p.Root), nspawnBin))
 		args = append(args, "--boot") // Launch systemd in the pod
 
