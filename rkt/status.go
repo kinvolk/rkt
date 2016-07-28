@@ -95,6 +95,8 @@ func printStatus(p *pod) error {
 		stdout.Printf("started=%s", startedStr)
 	}
 
+	stdout.Printf("stage1-image=%s", p.stage1ImageLabel)
+
 	if p.isRunning() {
 		stdout.Printf("networks=%s", fmtNets(p.nets))
 	}

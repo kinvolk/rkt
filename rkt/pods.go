@@ -17,6 +17,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -59,6 +60,7 @@ type pod struct {
 	isDeleting       bool   // when locked at pods/garbage/$uuid the pod is garbage that never ran, and is being actively deleted
 	isGone           bool   // when a pod no longer can be located at its uuid anywhere XXX: only set by refreshState()
 	mountLabel       string // Label to use for container image
+	stage1ImageLabel string // Stage 1 image label used by the pod
 }
 
 // Exported state. See Documentation/devel/pod-lifecycle.md for some explanation
@@ -281,6 +283,16 @@ func getPod(uuid *types.UUID) (*pod, error) {
 			return nil, errwrap.Wrap(fmt.Errorf("error opening pod %v netinfo", uuid), err)
 		}
 	}
+
+	dat, err := ioutil.ReadFile(filepath.Join(p.path(), "stage1/manifest"))
+	if err != nil {
+		return nil, errwrap.Wrap(fmt.Errorf("error opening pod manifest %s", p.path()), err)
+	}
+	var im *schema.ImageManifest
+	if err = json.Unmarshal(dat, &im); err != nil {
+		return nil, errwrap.Wrap(fmt.Errorf("error decoding pod manifest %s", p.path()), err)
+	}
+	p.stage1ImageLabel = string(im.Name)
 
 	return p, nil
 }
