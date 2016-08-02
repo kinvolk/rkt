@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/coreos/rkt/pkg/keystore"
 	rktflag "github.com/coreos/rkt/rkt/flag"
@@ -55,19 +54,6 @@ func (f *fileFetcher) Hash(aciPath string, a *asc) (string, error) {
 		Latest:          false,
 		InsecureOptions: int64(f.InsecureFlags.Value()),
 	})
-	if err != nil {
-		return "", err
-	}
-
-	ascLocation := ""
-	if a != nil {
-		ascLocation = "file://" + a.Location
-	}
-
-	newRem := imagestore.NewRemote("file://"+aciPath, ascLocation)
-	newRem.BlobKey = key
-	newRem.DownloadTime = time.Now()
-	err = f.S.WriteRemote(newRem)
 	if err != nil {
 		return "", err
 	}
