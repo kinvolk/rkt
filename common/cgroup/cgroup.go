@@ -365,6 +365,10 @@ func RemountCgroupsRO(root string, enabledCgroups map[int][]string, subcgroup st
 		cPath := filepath.Join(cgroupTmpfs, c)
 		subcgroupPath := filepath.Join(cPath, subcgroup, "system.slice")
 
+		if c == "devices" {
+			continue
+		}
+
 		// Workaround for https://github.com/coreos/rkt/issues/1210
 		if c == "cpuset" {
 			fixCpusetKnobs(cPath)
