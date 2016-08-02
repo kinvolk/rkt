@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"github.com/coreos/rkt/store/db"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/jonboulle/clockwork"
 )
 
@@ -951,9 +950,10 @@ func testMigrate(tt migrateTest) error {
 	if err := tt.curdb.load(db); err != nil {
 		return err
 	}
-
 	if !tt.curdb.compare(tt.postdb) {
-		return spew.Errorf("while comparing DBs:\n\tgot %#v\n\twant %#v\n", tt.curdb, tt.postdb)
+		// TODO(sgotti) not very useful as these are pointers.
+		// Use something like go-spew to write the full data?
+		return fmt.Errorf("got %#v, want %#v", tt.curdb, tt.postdb)
 	}
 
 	return nil
@@ -984,7 +984,6 @@ func TestMigrate(t *testing.T) {
 	treeStoreSizes := []int64{
 		0,
 		2 << 8,
-		2 << 16,
 	}
 
 	now := time.Now().UTC()
