@@ -50,10 +50,7 @@ func (f *fileFetcher) Hash(aciPath string, a *asc) (string, error) {
 	}
 	defer aciFile.Close()
 
-	key, err := f.S.WriteACI(aciFile, imagestore.ACIFetchInfo{
-		Latest:          false,
-		InsecureOptions: int64(f.InsecureFlags.Value()),
-	})
+	key, err := f.S.WriteACI(aciFile, false)
 	if err != nil {
 		return "", err
 	}

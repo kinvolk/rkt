@@ -75,10 +75,7 @@ func (f *dockerFetcher) fetchImageFrom(u *url.URL, latest bool) (string, error) 
 	// alive, because we have an fd to it opened.
 	defer aciFile.Close()
 
-	key, err := f.S.WriteACI(aciFile, imagestore.ACIFetchInfo{
-		Latest:          latest,
-		InsecureOptions: int64(f.InsecureFlags.Value()),
-	})
+	key, err := f.S.WriteACI(aciFile, latest)
 	if err != nil {
 		return "", err
 	}
