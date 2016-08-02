@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/hashicorp/errwrap"
-	"github.com/jonboulle/clockwork"
 )
 
 type migrateFunc func(*sql.Tx) error
@@ -36,8 +35,6 @@ var (
 		5: migrateToV5,
 		6: migrateToV6,
 	}
-
-	clock = clockwork.NewRealClock()
 )
 
 func migrate(tx *sql.Tx, finalVersion int) error {
@@ -50,17 +47,16 @@ func migrate(tx *sql.Tx, finalVersion int) error {
 	}
 
 	for v := version + 1; v <= finalVersion; v++ {
-		migrate, ok := migrateTable[v]
+		f, ok := migrateTable[v]
 		if !ok {
 			return fmt.Errorf("missing migrate function for version %d", v)
 		}
-
-		if err := migrate(tx); err != nil {
-			return errwrap.Wrap(fmt.Errorf("failed to migrate db to version %d", v), err)
+		err := f(tx)
+		if err == nil {
+			updateDBVersion(tx, v)
 		}
-
-		if err := updateDBVersion(tx, v); err != nil {
-			return errwrap.Wrap(fmt.Errorf("updateDBVersion() failed to update the db to version %d", v), err)
+		if err != nil {
+			return errwrap.Wrap(fmt.Errorf("failed to migrate db to version %d", v), err)
 		}
 	}
 	return nil
@@ -130,7 +126,7 @@ func migrateToV4(tx *sql.Tx) error {
 			return err
 		}
 	}
-	t := clock.Now().UTC()
+	t := time.Now().UTC()
 	_, err := tx.Exec("UPDATE aciinfo lastusedtime = $1", t)
 	if err != nil {
 		return err
