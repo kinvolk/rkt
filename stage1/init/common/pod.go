@@ -139,6 +139,7 @@ func WritePrepareAppTemplate(p *stage1commontypes.Pod) error {
 		unit.NewUnitOption("Service", "User", "0"),
 		unit.NewUnitOption("Service", "Group", "0"),
 		unit.NewUnitOption("Service", "CapabilityBoundingSet", "CAP_SYS_ADMIN CAP_DAC_OVERRIDE"),
+		//unit.NewUnitOption("Service", "TTYPath", "/dev/pts-%i"),
 	}
 
 	unitsPath := filepath.Join(common.Stage1RootfsPath(p.Root), UnitsDir)

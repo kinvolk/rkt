@@ -273,6 +273,7 @@ int main(int argc, char *argv[])
 		{ "/proc/sys/kernel/hostname", "/etc/hostname", "bind", NULL, MS_BIND },
 	};
 	const char *root;
+	char pts_app_path[4096];
 	int rootfd;
 	char to[4096];
 	int i;
@@ -314,6 +315,19 @@ int main(int argc, char *argv[])
 			 errno != EEXIST,
 			"Failed to create directory \"%s/%s\"", root, d->name);
 	}
+    strcpy(pts_app_path, "/dev/pts-");
+    strcpy(pts_app_path+9, root);
+    for (i = 9; i < strlen(pts_app_path); i++) {
+        if (pts_app_path[i] == '/')
+            pts_app_path[i] = '-';
+    }
+
+    pexit_if(mkdirat(rootfd, pts_app_path, 0755) == -1 &&
+             errno != EEXIST,
+             "Failed to create directory \"%s/%s\"", root, pts_app_path);
+
+    pexit_if(mount("devpts", pts_app_path, "devpts", MS_RELATIME, NULL) == -1,
+             "Failed to mount devpts at %s", pts_app_path);
 
 	exit_if(!ensure_etc_hosts_exists(root, rootfd),
 		"Failed to ensure \"%s/etc/hosts\" exists", root);
