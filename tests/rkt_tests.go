@@ -474,14 +474,15 @@ type networkInfo struct {
 }
 
 type podInfo struct {
-	id        string
-	pid       int
-	state     string
-	apps      map[string]*appInfo
-	networks  map[string]*networkInfo
-	manifest  *schema.PodManifest
-	createdAt int64
-	startedAt int64
+	id          string
+	pid         int
+	state       string
+	stage1Image string
+	apps        map[string]*appInfo
+	networks    map[string]*networkInfo
+	manifest    *schema.PodManifest
+	createdAt   int64
+	startedAt   int64
 }
 
 type imagePatch struct {
@@ -492,6 +493,7 @@ type imagePatch struct {
 // parsePodInfo parses the 'rkt status $UUID' result into podInfo struct.
 // For example, the 'result' can be:
 // state=running
+// stage1-image=coreos.com/rkt/stage1-coreos
 // networks=default:ip4=172.16.28.103
 // pid=14352
 // exited=false
@@ -509,6 +511,8 @@ func parsePodInfoOutput(t *testing.T, result string, p *podInfo) {
 		switch tuples[0] {
 		case "state":
 			p.state = tuples[1]
+		case "stage1Image":
+			p.stage1Image = tuples[1]
 		case "networks":
 			if tuples[1] == "" {
 				break
