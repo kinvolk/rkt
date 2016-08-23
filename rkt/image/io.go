@@ -43,6 +43,16 @@ type readSeekCloser interface {
 	io.Closer
 }
 
+type nopReadSeekCloser struct {
+	readSeekCloser
+}
+
+func (nopReadSeekCloser) Close() error { return nil }
+
+func NopReadSeekCloser(rsc readSeekCloser) readSeekCloser {
+	return nopReadSeekCloser{rsc}
+}
+
 // getIoProgressReader returns a reader that wraps the HTTP response
 // body, so it prints a pretty progress bar when reading data from it.
 func getIoProgressReader(label string, res *http.Response) io.Reader {
