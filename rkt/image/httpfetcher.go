@@ -107,7 +107,7 @@ func (f *httpFetcher) fetchURL(u *url.URL, a *asc, etag string) (readSeekCloser,
 		o := f.httpOps()
 		aciFile, cd, err := o.DownloadImageWithETag(u, etag)
 		if err != nil {
-			return nil, nil, err
+			return NopReadSeekCloser(nil), nil, err
 		}
 		return aciFile, cd, err
 	}
@@ -120,28 +120,28 @@ func (f *httpFetcher) fetchVerifiedURL(u *url.URL, a *asc, etag string) (readSee
 	f.maybeOverrideAscFetcherWithRemote(o, u, a)
 	ascFile, retry, err := o.DownloadSignature(a)
 	if err != nil {
-		return nil, nil, err
+		return NopReadSeekCloser(nil), nil, err
 	}
 	defer func() { maybeClose(ascFile) }()
 
 	aciFile, cd, err := o.DownloadImageWithETag(u, etag)
 	if err != nil {
-		return nil, nil, err
+		return NopReadSeekCloser(nil), nil, err
 	}
 	defer func() { maybeClose(aciFile) }()
 	if cd.UseCached {
-		return nil, cd, nil
+		return NopReadSeekCloser(nil), cd, nil
 	}
 
 	if retry {
 		ascFile, err = o.DownloadSignatureAgain(a)
 		if err != nil {
-			return nil, nil, err
+			return NopReadSeekCloser(nil), nil, err
 		}
 	}
 
 	if err := f.validate(aciFile, ascFile); err != nil {
-		return nil, nil, err
+		return NopReadSeekCloser(nil), nil, err
 	}
 	retAciFile := aciFile
 	aciFile = nil
