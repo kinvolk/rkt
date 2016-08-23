@@ -91,7 +91,11 @@ func (o *httpOps) DownloadImageWithETag(u *url.URL, etag string) (readSeekCloser
 	if err != nil {
 		return NopReadSeekCloser(nil), nil, err
 	}
-	defer func() { maybeClose(aciFile) }()
+	defer func() {
+		if aciFile != nil {
+			aciFile.Close()
+		}
+	}()
 
 	session := o.getSession(u, aciFile.File, "ACI", etag)
 	dl := o.getDownloader(session)
