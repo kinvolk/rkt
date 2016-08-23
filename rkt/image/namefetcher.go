@@ -161,14 +161,14 @@ func (f *nameFetcher) fetch(app *discovery.App, aciURL string, a *asc, etag stri
 
 	u, err := url.Parse(aciURL)
 	if err != nil {
-		return nil, nil, errwrap.Wrap(errors.New("error parsing ACI url"), err)
+		return NopReadSeekCloser(nil), nil, errwrap.Wrap(errors.New("error parsing ACI url"), err)
 	}
 
 	if f.InsecureFlags.SkipImageCheck() || f.Ks == nil {
 		o := f.httpOps()
 		aciFile, cd, err := o.DownloadImageWithETag(u, etag)
 		if err != nil {
-			return nil, nil, err
+			return NopReadSeekCloser(nil), nil, err
 		}
 		return aciFile, cd, nil
 	}
@@ -183,31 +183,31 @@ func (f *nameFetcher) fetchVerifiedURL(app *discovery.App, u *url.URL, a *asc) (
 	o := f.httpOps()
 	ascFile, retry, err := o.DownloadSignature(a)
 	if err != nil {
-		return nil, nil, err
+		return NopReadSeekCloser(nil), nil, err
 	}
 	defer func() { maybeClose(ascFile) }()
 
 	if !retry {
 		if err := f.checkIdentity(appName, ascFile); err != nil {
-			return nil, nil, err
+			return NopReadSeekCloser(nil), nil, err
 		}
 	}
 
 	aciFile, cd, err := o.DownloadImage(u)
 	if err != nil {
-		return nil, nil, err
+		return NopReadSeekCloser(nil), nil, err
 	}
 	defer func() { maybeClose(aciFile) }()
 
 	if retry {
 		ascFile, err = o.DownloadSignatureAgain(a)
 		if err != nil {
-			return nil, nil, err
+			return NopReadSeekCloser(nil), nil, err
 		}
 	}
 
 	if err := f.validate(app, aciFile, ascFile); err != nil {
-		return nil, nil, err
+		return NopReadSeekCloser(nil), nil, err
 	}
 	retAciFile := aciFile
 	aciFile = nil

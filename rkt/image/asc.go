@@ -50,16 +50,16 @@ type remoteAscFetcher struct {
 func (f *remoteAscFetcher) Get(location string) (readSeekCloser, error) {
 	roc, err := getTmpROC(f.S, location)
 	if err != nil {
-		return nil, err
+		return NopReadSeekCloser(nil), err
 	}
 	defer func() { maybeClose(roc) }()
 
 	u, err := url.Parse(location)
 	if err != nil {
-		return nil, errwrap.Wrap(errors.New("invalid signature location"), err)
+		return NopReadSeekCloser(nil), errwrap.Wrap(errors.New("invalid signature location"), err)
 	}
 	if err := f.F(u, roc.File); err != nil {
-		return nil, err
+		return NopReadSeekCloser(nil), err
 	}
 	retRoc := roc
 	roc = nil
@@ -81,5 +81,5 @@ func (a *asc) Get() (readSeekCloser, error) {
 	if a.Fetcher != nil {
 		return a.Fetcher.Get(a.Location)
 	}
-	return nil, nil
+	return NopReadSeekCloser(nil), nil
 }
