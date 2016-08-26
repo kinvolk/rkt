@@ -185,11 +185,7 @@ func (f *nameFetcher) fetchVerifiedURL(app *discovery.App, u *url.URL, a *asc) (
 	if err != nil {
 		return nil, nil, err
 	}
-	defer func() {
-		if ascFile != nil {
-			ascFile.Close()
-		}
-	}()
+	defer func() { ascFile.Close() }()
 
 	if !retry {
 		if err := f.checkIdentity(appName, ascFile); err != nil {
@@ -201,11 +197,7 @@ func (f *nameFetcher) fetchVerifiedURL(app *discovery.App, u *url.URL, a *asc) (
 	if err != nil {
 		return nil, nil, err
 	}
-	defer func() {
-		if aciFile != nil {
-			aciFile.Close()
-		}
-	}()
+	defer func() { aciFile.Close() }()
 
 	if retry {
 		ascFile, err = o.DownloadSignatureAgain(a)

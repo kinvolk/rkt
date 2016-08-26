@@ -52,11 +52,7 @@ func (f *remoteAscFetcher) Get(location string) (readSeekCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if roc != nil {
-			roc.Close()
-		}
-	}()
+	defer func() { roc.Close() }()
 
 	u, err := url.Parse(location)
 	if err != nil {

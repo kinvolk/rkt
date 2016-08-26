@@ -61,11 +61,7 @@ func (f *httpFetcher) Hash(u *url.URL, a *asc) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer func() {
-		if aciFile != nil {
-			aciFile.Close()
-		}
-	}()
+	defer func() { aciFile.Close() }()
 
 	if key := maybeUseCached(f.Rem, cd); key != "" {
 		// TODO(krnowak): that does not update the store with
@@ -126,21 +122,13 @@ func (f *httpFetcher) fetchVerifiedURL(u *url.URL, a *asc, etag string) (readSee
 	if err != nil {
 		return nil, nil, err
 	}
-	defer func() {
-		if ascFile != nil {
-			ascFile.Close()
-		}
-	}()
+	defer func() { ascFile.Close() }()
 
 	aciFile, cd, err := o.DownloadImageWithETag(u, etag)
 	if err != nil {
 		return nil, nil, err
 	}
-	defer func() {
-		if aciFile != nil {
-			aciFile.Close()
-		}
-	}()
+	defer func() { aciFile.Close() }()
 
 	if cd.UseCached {
 		return nil, cd, nil
