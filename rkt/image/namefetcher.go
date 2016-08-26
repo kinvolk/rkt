@@ -124,7 +124,7 @@ func (f *nameFetcher) fetchImageFromSingleEndpoint(app *discovery.App, aciURL st
 	if err != nil {
 		return "", err
 	}
-	defer func() { aciFile.Close() }()
+	defer aciFile.Close()
 
 	if key := maybeUseCached(rem, cd); key != "" {
 		return key, nil
@@ -185,7 +185,7 @@ func (f *nameFetcher) fetchVerifiedURL(app *discovery.App, u *url.URL, a *asc) (
 	if err != nil {
 		return nil, nil, err
 	}
-	defer func() { ascFile.Close() }()
+	defer ascFile.Close()
 
 	if !retry {
 		if err := f.checkIdentity(appName, ascFile); err != nil {
@@ -197,7 +197,7 @@ func (f *nameFetcher) fetchVerifiedURL(app *discovery.App, u *url.URL, a *asc) (
 	if err != nil {
 		return nil, nil, err
 	}
-	defer func() { aciFile.Close() }()
+	defer aciFile.Close()
 
 	if retry {
 		ascFile, err = o.DownloadSignatureAgain(a)

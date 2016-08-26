@@ -48,7 +48,7 @@ func (f *fileFetcher) Hash(aciPath string, a *asc) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer func() { aciFile.Close() }()
+	defer aciFile.Close()
 
 	key, err := f.S.WriteACI(aciFile, imagestore.ACIFetchInfo{
 		Latest: false,
@@ -85,13 +85,13 @@ func (f *fileFetcher) getVerifiedFile(aciPath string, a *asc) (*os.File, error) 
 	if err != nil {
 		return nil, errwrap.Wrap(errors.New("error opening signature file"), err)
 	}
-	defer func() { ascFile.Close() }()
+	defer ascFile.Close()
 
 	aciFile, err := os.Open(aciPath)
 	if err != nil {
 		return nil, errwrap.Wrap(errors.New("error opening ACI file"), err)
 	}
-	defer func() { aciFile.Close() }()
+	defer aciFile.Close()
 
 	validator, err := newValidator(aciFile)
 	if err != nil {
