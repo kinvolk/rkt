@@ -61,9 +61,7 @@ func (f *remoteAscFetcher) Get(location string) (readSeekCloser, error) {
 	if err := f.F(u, roc.File); err != nil {
 		return nil, err
 	}
-	retRoc := roc
-	roc = nil
-	return retRoc, nil
+	return roc, nil
 }
 
 // asc is an abstraction for getting signature files.

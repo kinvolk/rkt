@@ -144,9 +144,7 @@ func (f *httpFetcher) fetchVerifiedURL(u *url.URL, a *asc, etag string) (readSee
 	if err := f.validate(aciFile, ascFile); err != nil {
 		return nil, nil, err
 	}
-	retAciFile := aciFile
-	aciFile = nil
-	return retAciFile, cd, nil
+	return aciFile, cd, nil
 }
 
 func (f *httpFetcher) httpOps() *httpOps {
