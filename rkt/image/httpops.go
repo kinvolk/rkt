@@ -49,7 +49,7 @@ func (o *httpOps) DownloadSignature(a *asc) (readSeekCloser, bool, error) {
 	}
 	if _, ok := err.(*statusAcceptedError); ok {
 		log.Printf("server requested deferring the signature download")
-		return nil, true, nil
+		return NopReadSeekCloser(nil), true, nil
 	}
 	return nil, false, errwrap.Wrap(errors.New("error downloading the signature file"), err)
 }

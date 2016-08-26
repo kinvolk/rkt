@@ -131,7 +131,7 @@ func (f *httpFetcher) fetchVerifiedURL(u *url.URL, a *asc, etag string) (readSee
 	defer func() { aciFile.Close() }()
 
 	if cd.UseCached {
-		return nil, cd, nil
+		return NopReadSeekCloser(nil), cd, nil
 	}
 
 	if retry {
