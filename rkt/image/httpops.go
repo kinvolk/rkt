@@ -49,9 +49,9 @@ func (o *httpOps) DownloadSignature(a *asc) (readSeekCloser, bool, error) {
 	}
 	if _, ok := err.(*statusAcceptedError); ok {
 		log.Printf("server requested deferring the signature download")
-		return NopReadSeekCloser(nil), true, nil
+		return nil, true, nil
 	}
-	return NopReadSeekCloser(nil), false, errwrap.Wrap(errors.New("error downloading the signature file"), err)
+	return nil, false, errwrap.Wrap(errors.New("error downloading the signature file"), err)
 }
 
 // DownloadSignatureAgain does a similar thing to DownloadSignature,
@@ -61,10 +61,10 @@ func (o *httpOps) DownloadSignatureAgain(a *asc) (readSeekCloser, error) {
 	ensureLogger(o.Debug)
 	ascFile, retry, err := o.DownloadSignature(a)
 	if err != nil {
-		return NopReadSeekCloser(nil), err
+		return nil, err
 	}
 	if retry {
-		return NopReadSeekCloser(nil), fmt.Errorf("error downloading the signature file: server asked to defer the download again")
+		return nil, fmt.Errorf("error downloading the signature file: server asked to defer the download again")
 	}
 	return ascFile, nil
 }
@@ -75,10 +75,10 @@ func (o *httpOps) DownloadImage(u *url.URL) (readSeekCloser, *cacheData, error) 
 	ensureLogger(o.Debug)
 	image, cd, err := o.DownloadImageWithETag(u, "")
 	if err != nil {
-		return NopReadSeekCloser(nil), nil, err
+		return nil, nil, err
 	}
 	if cd.UseCached {
-		return NopReadSeekCloser(nil), nil, fmt.Errorf("asked to use cached image even if not asked for that")
+		return nil, nil, fmt.Errorf("asked to use cached image even if not asked for that")
 	}
 	return image, cd, nil
 }
@@ -89,7 +89,7 @@ func (o *httpOps) DownloadImageWithETag(u *url.URL, etag string) (readSeekCloser
 	ensureLogger(o.Debug)
 	aciFile, err := getTmpROC(o.S, u.String())
 	if err != nil {
-		return NopReadSeekCloser(nil), nil, err
+		return nil, nil, err
 	}
 	defer func() {
 		if aciFile != nil {
@@ -100,7 +100,7 @@ func (o *httpOps) DownloadImageWithETag(u *url.URL, etag string) (readSeekCloser
 	session := o.getSession(u, aciFile.File, "ACI", etag)
 	dl := o.getDownloader(session)
 	if err := dl.Download(u, aciFile.File); err != nil {
-		return NopReadSeekCloser(nil), nil, errwrap.Wrap(errors.New("error downloading ACI"), err)
+		return nil, nil, errwrap.Wrap(errors.New("error downloading ACI"), err)
 	}
 	if session.Cd.UseCached {
 		return NopReadSeekCloser(nil), session.Cd, nil
