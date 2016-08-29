@@ -91,7 +91,6 @@ func (f *fileFetcher) getVerifiedFile(aciPath string, a *asc) (*os.File, error) 
 	if err != nil {
 		return nil, errwrap.Wrap(errors.New("error opening ACI file"), err)
 	}
-	defer aciFile.Close()
 
 	validator, err := newValidator(aciFile)
 	if err != nil {
@@ -104,9 +103,7 @@ func (f *fileFetcher) getVerifiedFile(aciPath string, a *asc) (*os.File, error) 
 	}
 	printIdentities(entity)
 
-	retAciFile := aciFile
-	aciFile = nil
-	return retAciFile, nil
+	return aciFile, nil
 }
 
 func (f *fileFetcher) maybeOverrideAsc(aciPath string, a *asc) {
