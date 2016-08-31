@@ -168,7 +168,6 @@ func writeAppReaper(p *stage1commontypes.Pod, appName string, appRootDirectory s
 		unit.NewUnitOption("Unit", "StopWhenUnneeded", "yes"),
 		unit.NewUnitOption("Unit", "Wants", "shutdown.service"),
 		unit.NewUnitOption("Unit", "After", "shutdown.service"),
-		unit.NewUnitOption("Unit", "Conflicts", "exit.target"),
 		unit.NewUnitOption("Unit", "Conflicts", "halt.target"),
 		unit.NewUnitOption("Unit", "Conflicts", "poweroff.target"),
 		unit.NewUnitOption("Service", "RemainAfterExit", "yes"),
