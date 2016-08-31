@@ -34,16 +34,12 @@ func AddApp(cfg RunConfig, dir string, img *types.Hash) error {
 	if err != nil {
 		return err
 	}
-	// TODO use runtime name or the same logic we use for images
-	nameStr := im.Name.String()
-
-	sn, err := types.SanitizeACName(nameStr)
+	appName, err := imageNameToAppName(im.Name)
 	if err != nil {
-		return err
+		return errwrap.Wrap(errors.New("error converting image name to app name"), err)
 	}
-	appName := *types.MustACName(sn)
 
-	appInfoDir := common.AppInfoPath(dir, appName)
+	appInfoDir := common.AppInfoPath(dir, *appName)
 	if err := os.MkdirAll(appInfoDir, common.DefaultRegularDirPerm); err != nil {
 		return errwrap.Wrap(errors.New("error creating apps info directory"), err)
 	}
@@ -69,11 +65,11 @@ func AddApp(cfg RunConfig, dir string, img *types.Hash) error {
 	}
 	cfg.CommonConfig.RootHash = hash
 
-	if err := ioutil.WriteFile(common.AppTreeStoreIDPath(dir, appName), []byte(treeStoreID), common.DefaultRegularFilePerm); err != nil {
+	if err := ioutil.WriteFile(common.AppTreeStoreIDPath(dir, *appName), []byte(treeStoreID), common.DefaultRegularFilePerm); err != nil {
 		return errwrap.Wrap(errors.New("error writing app treeStoreID"), err)
 	}
 
-	if err := setupAppImage(cfg, appName, *img, dir, cfg.UseOverlay); err != nil {
+	if err := setupAppImage(cfg, *appName, *img, dir, cfg.UseOverlay); err != nil {
 		return fmt.Errorf("error setting up app image: %v", err)
 	}
 

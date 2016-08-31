@@ -678,11 +678,9 @@ func setupAppImage(cfg RunConfig, appName types.ACName, img types.Hash, cdir str
 		if err != nil {
 			return err
 		}
-		/*
-			if err := copyAppManifest(cdir, appName, ad); err != nil {
-				return err
-			}
-		*/
+		if err := copyAppManifest(cdir, appName, ad); err != nil {
+			return err
+		}
 		if err := overlayRender(cfg, string(treeStoreID), cdir, ad, appName.String()); err != nil {
 			return errwrap.Wrap(errors.New("error rendering overlay filesystem"), err)
 		}
@@ -786,7 +784,7 @@ func copyAppManifest(cdir string, appName types.ACName, dest string) error {
 	sourceFn := filepath.Join(appInfoDir, "manifest")
 	destFn := filepath.Join(dest, "manifest")
 	if err := fileutil.CopyRegularFile(sourceFn, destFn); err != nil {
-		return errwrap.Wrap(errors.New("error copying image manifest"), err)
+		return fmt.Errorf("error copying image manifest: %v", err)
 	}
 	return nil
 }

@@ -12,17 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
-
-import "github.com/spf13/cobra"
-
-var (
-	cmdApp = &cobra.Command{
-		Use:   "app [command]",
-		Short: "Operate on app level operations",
-	}
-)
-
-func init() {
-	cmdRkt.AddCommand(cmdApp)
-}
+// lib package is expected to be used by other projects who want to integrate with rkt.
+package lib
