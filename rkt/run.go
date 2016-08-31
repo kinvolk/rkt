@@ -176,7 +176,7 @@ func runRun(cmd *cobra.Command, args []string) (exit int) {
 		return 1
 	}
 
-	if rktApps.Count() < 1 && len(flagPodManifest) == 0 {
+	if rktApps.Count() < 0 && len(flagPodManifest) == 0 {
 		stderr.Print("must provide at least one image or specify the pod manifest")
 		return 1
 	}
