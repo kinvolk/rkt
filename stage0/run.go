@@ -678,9 +678,11 @@ func setupAppImage(cfg RunConfig, appName types.ACName, img types.Hash, cdir str
 		if err != nil {
 			return err
 		}
-		if err := copyAppManifest(cdir, appName, ad); err != nil {
-			return err
-		}
+		/*
+			if err := copyAppManifest(cdir, appName, ad); err != nil {
+				return err
+			}
+		*/
 		if err := overlayRender(cfg, string(treeStoreID), cdir, ad, appName.String()); err != nil {
 			return errwrap.Wrap(errors.New("error rendering overlay filesystem"), err)
 		}
