@@ -23,6 +23,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"syscall"
 
 	"github.com/coreos/rkt/common"
 	"github.com/coreos/rkt/pkg/aci"
@@ -248,4 +250,73 @@ func updateFile(path string, contents []byte) error {
 	}
 
 	return nil
+}
+
+func RmApp(dir string, uuid *types.UUID, usesOverlay bool, appName *types.ACName) error {
+	p, err := stage1types.LoadPod(dir, uuid)
+	if err != nil {
+		return errwrap.Wrap(errors.New("error loading pod manifest"), err)
+	}
+
+	pm := p.Manifest
+	app := pm.Apps.Get(*appName)
+	if app == nil {
+		return fmt.Errorf("error: nonexistent app %q", *appName)
+	}
+
+	treeStoreID, err := ioutil.ReadFile(common.AppTreeStoreIDPath(dir, *appName))
+	if err != nil {
+		return err
+	}
+
+	// TODO call stop entry point
+
+	// TODO call rm entry point
+
+	appInfoDir := common.AppInfoPath(dir, *appName)
+	if err := os.RemoveAll(appInfoDir); err != nil {
+		return errwrap.Wrap(errors.New("error removing app info directory"), err)
+	}
+
+	if usesOverlay {
+		appRootfs := common.AppRootfsPath(dir, *appName)
+		if err := syscall.Unmount(appRootfs, 0); err != nil {
+			return err
+		}
+
+		ts := filepath.Join(dir, "overlay", string(treeStoreID))
+		if err := os.RemoveAll(ts); err != nil {
+			return errwrap.Wrap(errors.New("error removing app info directory"), err)
+		}
+	}
+
+	if err := os.RemoveAll(common.AppPath(dir, *appName)); err != nil {
+		return err
+	}
+
+	appStatusPath := filepath.Join(common.Stage1RootfsPath(dir), "rkt", "status", appName.String())
+	if err := os.Remove(appStatusPath); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	envPath := filepath.Join(common.Stage1RootfsPath(dir), "rkt", "env", appName.String())
+	if err := os.Remove(envPath); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	removeAppFromPodManifest(pm, appName)
+
+	if err := updatePodManifest(dir, pm); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func removeAppFromPodManifest(pm *schema.PodManifest, appName *types.ACName) {
+	for i, app := range pm.Apps {
+		if app.Name == *appName {
+			pm.Apps = append(pm.Apps[:i], pm.Apps[i+1:]...)
+		}
+	}
 }
