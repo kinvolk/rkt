@@ -34,6 +34,10 @@
             "value": "@RKT_STAGE1_STOP@"
         },
         {
+            "name": "coreos.com/rkt/stage1/app/rm",
+            "value": "/app-rm"
+        },
+        {
             "name": "coreos.com/rkt/stage1/interface-version",
             "value": "3"
         }
