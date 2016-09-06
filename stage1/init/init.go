@@ -109,6 +109,7 @@ var (
 	disableCapabilities bool
 	disablePaths        bool
 	disableSeccomp      bool
+	mutable             bool
 )
 
 func init() {
@@ -122,6 +123,7 @@ func init() {
 	flag.BoolVar(&disableCapabilities, "disable-capabilities-restriction", false, "Disable capability restrictions")
 	flag.BoolVar(&disablePaths, "disable-paths", false, "Disable paths restrictions")
 	flag.BoolVar(&disableSeccomp, "disable-seccomp", false, "Disable seccomp restrictions")
+	flag.BoolVar(&mutable, "mutable", false, "Enable mutable operations on this pod, including starting an empty one")
 
 	// this ensures that main runs only on main thread (thread group leader).
 	// since namespace ops (unshare, setns) are done for a single thread, we
@@ -248,6 +250,10 @@ func getArgsEnv(p *stage1commontypes.Pod, flavor string, canMachinedRegister boo
 	case "kvm":
 		if privateUsers != "" {
 			return nil, nil, fmt.Errorf("flag --private-users cannot be used with an lkvm stage1")
+		}
+
+		if mutable {
+			return nil, nil, fmt.Errorf("flag --mutable is not implemented in lkvm stage1")
 		}
 
 		// kernel and hypervisor binaries are located relative to the working directory
@@ -558,14 +564,22 @@ func stage1() int {
 		}
 	}
 
-	if err = stage1initcommon.WriteDefaultTarget(p); err != nil {
-		log.PrintE("failed to write default.target", err)
-		return 1
+	insecureOptions := stage1initcommon.Stage1InsecureOptions{
+		DisablePaths:        disablePaths,
+		DisableCapabilities: disableCapabilities,
+		DisableSeccomp:      disableSeccomp,
 	}
 
-	if err = stage1initcommon.WritePrepareAppTemplate(p); err != nil {
-		log.PrintE("failed to write prepare-app service template", err)
-		return 1
+	if mutable {
+		if err = stage1initcommon.MutableEnv(p); err != nil {
+			log.Error(err)
+			return 1
+		}
+	} else {
+		if err = stage1initcommon.ImmutableEnv(p, interactive, flavor, privateUsers, insecureOptions); err != nil {
+			log.Error(err)
+			return 1
+		}
 	}
 
 	if err := stage1initcommon.SetJournalPermissions(p); err != nil {
@@ -578,17 +592,6 @@ func stage1() int {
 			log.PrintE("failed to configure systemd for kvm", err)
 			return 1
 		}
-	}
-
-	insecureOptions := stage1initcommon.Stage1InsecureOptions{
-		DisablePaths:        disablePaths,
-		DisableCapabilities: disableCapabilities,
-		DisableSeccomp:      disableSeccomp,
-	}
-
-	if err = stage1initcommon.PodToSystemd(p, interactive, flavor, privateUsers, insecureOptions); err != nil {
-		log.PrintE("failed to configure systemd", err)
-		return 1
 	}
 
 	canMachinedRegister := false

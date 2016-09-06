@@ -340,6 +340,7 @@ func runRun(cmd *cobra.Command, args []string) (exit int) {
 		InsecurePaths:        globalFlags.InsecureFlags.SkipPaths(),
 		InsecureSeccomp:      globalFlags.InsecureFlags.SkipSeccomp(),
 		UseOverlay:           useOverlay,
+		Mutable:              false,
 	}
 
 	_, manifest, err := p.PodManifest()

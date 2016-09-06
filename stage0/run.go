@@ -89,6 +89,7 @@ type RunConfig struct {
 	InsecurePaths        bool           // Do not restrict access to files in sysfs or procfs
 	InsecureSeccomp      bool           // Do not add seccomp restrictions
 	UseOverlay           bool           // run pod with overlay fs
+	Mutable              bool           // whether this pod is mutable
 }
 
 // CommonConfig defines the configuration shared by both Run and Prepare
@@ -379,7 +380,7 @@ func Prepare(cfg PrepareConfig, dir string, uuid *types.UUID) error {
 		return errwrap.Wrap(errors.New("error creating apps info directory"), err)
 	}
 	debug("Preparing stage1")
-	if err := prepareStage1Image(cfg, cfg.Stage1Image, dir, cfg.UseOverlay); err != nil {
+	if err := prepareStage1Image(cfg, dir); err != nil {
 		return errwrap.Wrap(errors.New("error preparing stage1"), err)
 	}
 
@@ -567,6 +568,11 @@ func Run(cfg RunConfig, dir string, dataDir string) {
 		}
 	}
 
+	// TODO(sur): spec out a boolean coreos.com/rkt/stage1/mutable, and introspect here
+	if cfg.Mutable {
+		args = append(args, "--mutable")
+	}
+
 	args = append(args, cfg.UUID.String())
 
 	// make sure the lock fd stays open across exec
@@ -691,13 +697,13 @@ func setupAppImage(cfg RunConfig, appName types.ACName, img types.Hash, cdir str
 // prepareStage1Image renders and verifies tree cache of the given hash
 // when using overlay.
 // When useOverlay is false, it attempts to render and expand the stage1.
-func prepareStage1Image(cfg PrepareConfig, img types.Hash, cdir string, useOverlay bool) error {
+func prepareStage1Image(cfg PrepareConfig, cdir string) error {
 	s1 := common.Stage1ImagePath(cdir)
 	if err := os.MkdirAll(s1, common.DefaultRegularDirPerm); err != nil {
 		return errwrap.Wrap(errors.New("error creating stage1 directory"), err)
 	}
 
-	treeStoreID, _, err := cfg.TreeStore.Render(img.String(), false)
+	treeStoreID, _, err := cfg.TreeStore.Render(cfg.Stage1Image.String(), false)
 	if err != nil {
 		return errwrap.Wrap(errors.New("error rendering tree image"), err)
 	}
@@ -707,7 +713,7 @@ func prepareStage1Image(cfg PrepareConfig, img types.Hash, cdir string, useOverl
 		if err != nil {
 			log.Printf("warning: tree cache is in a bad state: %v. Rebuilding...", err)
 			var err error
-			treeStoreID, hash, err = cfg.TreeStore.Render(img.String(), true)
+			treeStoreID, hash, err = cfg.TreeStore.Render(cfg.Stage1Image.String(), true)
 			if err != nil {
 				return errwrap.Wrap(errors.New("error rendering tree image"), err)
 			}
@@ -715,11 +721,11 @@ func prepareStage1Image(cfg PrepareConfig, img types.Hash, cdir string, useOverl
 		cfg.CommonConfig.RootHash = hash
 	}
 
-	if err := writeManifest(*cfg.CommonConfig, img, s1); err != nil {
+	if err := writeManifest(*cfg.CommonConfig, cfg.Stage1Image, s1); err != nil {
 		return errwrap.Wrap(errors.New("error writing manifest"), err)
 	}
 
-	if !useOverlay {
+	if !cfg.UseOverlay {
 		destRootfs := filepath.Join(s1, "rootfs")
 		cachedTreePath := cfg.TreeStore.GetRootFS(treeStoreID)
 		if err := fileutil.CopyTree(cachedTreePath, destRootfs, cfg.PrivateUsers); err != nil {

@@ -49,7 +49,7 @@ func runAppRm(cmd *cobra.Command, args []string) (exit int) {
 		return 1
 	}
 
-	p, err := pkgPod.GetPodFromUUIDString(getDataDir(), args[0])
+	p, err := pkgPod.PodFromUUIDString(getDataDir(), args[0])
 	if err != nil {
 		stderr.PrintE("problem retrieving pod", err)
 		return 1
