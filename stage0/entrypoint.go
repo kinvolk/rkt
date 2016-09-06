@@ -32,6 +32,8 @@ const (
 	runEntrypoint   = "coreos.com/rkt/stage1/run"
 	gcEntrypoint    = "coreos.com/rkt/stage1/gc"
 	stopEntrypoint  = "coreos.com/rkt/stage1/stop"
+
+	appRmEntrypoint = "coreos.com/rkt/stage1/app/rm"
 )
 
 // getStage1Entrypoint retrieves the named entrypoint from the stage1 manifest for a given pod

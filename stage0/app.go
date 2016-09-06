@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"syscall"
 
@@ -68,6 +69,7 @@ func AddApp(cfg RunConfig, dir string, img *types.Hash) error {
 
 	uidRange := user.NewBlankUidRange()
 	// TODO(iaguis): DRY: refactor this
+	var treeStoreID string
 	if cfg.UseOverlay {
 		treeStoreID, _, err := cfg.TreeStore.Render(img.String(), false)
 		if err != nil {
@@ -87,11 +89,6 @@ func AddApp(cfg RunConfig, dir string, img *types.Hash) error {
 
 		if err := ioutil.WriteFile(common.AppTreeStoreIDPath(dir, *appName), []byte(treeStoreID), common.DefaultRegularFilePerm); err != nil {
 			return errwrap.Wrap(errors.New("error writing app treeStoreID"), err)
-		}
-
-		imgDir := filepath.Join(dir, "overlay", treeStoreID)
-		if err := os.Chown(imgDir, -1, cfg.RktGid); err != nil {
-			return err
 		}
 	} else {
 		ad := common.AppPath(dir, *appName)
@@ -130,6 +127,13 @@ func AddApp(cfg RunConfig, dir string, img *types.Hash) error {
 
 	if err := setupAppImage(cfg, *appName, *img, dir, cfg.UseOverlay); err != nil {
 		return fmt.Errorf("error setting up app image: %v", err)
+	}
+
+	if cfg.UseOverlay {
+		imgDir := filepath.Join(dir, "overlay", treeStoreID)
+		if err := os.Chown(imgDir, -1, cfg.RktGid); err != nil {
+			return err
+		}
 	}
 
 	ra := schema.RuntimeApp{
@@ -218,7 +222,42 @@ func RmApp(dir string, uuid *types.UUID, usesOverlay bool, appName *types.ACName
 
 	// TODO call stop entry point
 
-	// TODO call rm entry point
+	s1rootfs := common.Stage1RootfsPath(dir)
+
+	previousDir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	debug("Pivoting to filesystem %s", dir)
+	if err := os.Chdir(dir); err != nil {
+		log.FatalE("failed changing to dir", err)
+	}
+
+	ep, err := getStage1Entrypoint(dir, appRmEntrypoint)
+	if err != nil {
+		return fmt.Errorf("rkt app rm not implemented for pod's stage1: %v", err)
+	}
+	args := []string{filepath.Join(s1rootfs, ep)}
+	debug("Execing %s", ep)
+
+	args = append(args, uuid.String())
+	args = append(args, appName.String())
+
+	c := exec.Cmd{
+		Path:   args[0],
+		Args:   args,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	if err := c.Run(); err != nil {
+		return fmt.Errorf("error executing stage1's app rm: %v", err)
+	}
+
+	if err := os.Chdir(previousDir); err != nil {
+		log.FatalE("failed changing to dir", err)
+	}
 
 	appInfoDir := common.AppInfoPath(dir, *appName)
 	if err := os.RemoveAll(appInfoDir); err != nil {
