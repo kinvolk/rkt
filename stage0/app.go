@@ -24,6 +24,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"syscall"
 
 	"github.com/coreos/rkt/common"
@@ -203,7 +204,7 @@ func updateFile(path string, contents []byte) error {
 	return nil
 }
 
-func RmApp(dir string, uuid *types.UUID, usesOverlay bool, appName *types.ACName) error {
+func RmApp(dir string, uuid *types.UUID, usesOverlay bool, appName *types.ACName, podPID int) error {
 	p, err := stage1types.LoadPod(dir, uuid)
 	if err != nil {
 		return errwrap.Wrap(errors.New("error loading pod manifest"), err)
@@ -234,15 +235,22 @@ func RmApp(dir string, uuid *types.UUID, usesOverlay bool, appName *types.ACName
 		log.FatalE("failed changing to dir", err)
 	}
 
-	ep, err := getStage1Entrypoint(dir, appRmEntrypoint)
+	rmEp, err := getStage1Entrypoint(dir, appRmEntrypoint)
 	if err != nil {
 		return fmt.Errorf("rkt app rm not implemented for pod's stage1: %v", err)
 	}
-	args := []string{filepath.Join(s1rootfs, ep)}
-	debug("Execing %s", ep)
+	args := []string{filepath.Join(s1rootfs, rmEp)}
+	debug("Execing %s", rmEp)
+
+	enterEp, err := getStage1Entrypoint(dir, enterEntrypoint)
+	if err != nil {
+		return errwrap.Wrap(errors.New("error determining 'enter' entrypoint"), err)
+	}
 
 	args = append(args, uuid.String())
 	args = append(args, appName.String())
+	args = append(args, filepath.Join(s1rootfs, enterEp))
+	args = append(args, strconv.Itoa(podPID))
 
 	c := exec.Cmd{
 		Path:   args[0],

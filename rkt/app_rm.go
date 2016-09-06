@@ -15,6 +15,8 @@
 package main
 
 import (
+	"fmt"
+
 	pkgPod "github.com/coreos/rkt/pkg/pod"
 	"github.com/coreos/rkt/stage0"
 
@@ -64,7 +66,13 @@ func runAppRm(cmd *cobra.Command, args []string) (exit int) {
 		stderr.PrintE("invalid app name", err)
 	}
 
-	err = stage0.RmApp(p.Path(), p.UUID, p.UsesOverlay(), appName)
+	podPID, err := p.ContainerPid1()
+	if err != nil {
+		stderr.PrintE(fmt.Sprintf("unable to determine the pid for pod %q", p.UUID), err)
+		return 1
+	}
+
+	err = stage0.RmApp(p.Path(), p.UUID, p.UsesOverlay(), appName, podPID)
 	if err != nil {
 		stderr.PrintE("error removing app", err)
 		return 1

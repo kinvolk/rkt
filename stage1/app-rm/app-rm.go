@@ -18,8 +18,10 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/coreos/rkt/common"
@@ -63,6 +65,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	enterEP := flag.Arg(2)
+
 	root := "."
 	_, err = stage1types.LoadPod(root, uuid)
 	if err != nil {
@@ -70,8 +74,25 @@ func main() {
 		os.Exit(1)
 	}
 
-	// TODO exec "systemctl is-active appName.String()"
-	// if active, bail out
+	args := []string{enterEP}
+
+	args = append(args, fmt.Sprintf("--pid=%s", flag.Arg(3)))
+	args = append(args, "/usr/bin/systemctl")
+	args = append(args, "is-active")
+	args = append(args, appName.String())
+
+	cmd := exec.Cmd{
+		Path: args[0],
+		Args: args,
+	}
+
+	// rely only on the output, since it returns non-zero for inactive units
+	out, _ := cmd.Output()
+
+	if string(out) != "inactive\n" {
+		log.Printf("app %q is still running", appName.String())
+		os.Exit(1)
+	}
 
 	s1rootfs := common.Stage1RootfsPath(".")
 	serviceDir := filepath.Join(s1rootfs, "usr", "lib", "systemd", "system")
@@ -81,13 +102,25 @@ func main() {
 	}
 
 	for _, p := range appServicePaths {
-		if err := os.Remove(p); err != nil {
+		if err := os.Remove(p); err != nil && !os.IsNotExist(err) {
 			log.PrintE("error removing app service file", err)
 			os.Exit(1)
 		}
 	}
 
-	// TODO exec "systemctl daemon-reload"
+	args = []string{enterEP}
+	args = append(args, fmt.Sprintf("--pid=%s", flag.Arg(3)))
+	args = append(args, "/usr/bin/systemctl")
+	args = append(args, "daemon-reload")
+
+	cmd = exec.Cmd{
+		Path: args[0],
+		Args: args,
+	}
+	if err := cmd.Run(); err != nil {
+		log.PrintE(`error executing "systemctl daemon-reload"`, err)
+		os.Exit(1)
+	}
 
 	// TODO unmount all the volumes
 
