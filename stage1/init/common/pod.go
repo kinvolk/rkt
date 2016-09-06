@@ -17,7 +17,6 @@
 package common
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -47,16 +46,6 @@ const (
 	// FlavorFile names the file storing the pod's flavor
 	FlavorFile    = "flavor"
 	SharedVolPerm = os.FileMode(0755)
-)
-
-var (
-	defaultEnv = map[string]string{
-		"PATH":    "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-		"SHELL":   "/bin/sh",
-		"USER":    "root",
-		"LOGNAME": "root",
-		"HOME":    "/root",
-	}
 )
 
 type Stage1InsecureOptions struct {
@@ -285,7 +274,7 @@ func generateSysusers(p *stage1commontypes.Pod, ra *schema.RuntimeApp, uid_ int,
 		return err
 	}
 
-	if err := shiftFiles(toShift, uidRange); err != nil {
+	if err := user.ShiftFiles(toShift, uidRange); err != nil {
 		return err
 	}
 
@@ -367,18 +356,6 @@ func findBinPath(p *stage1commontypes.Pod, appName types.ACName, app types.App, 
 	return binPath, nil
 }
 
-// shiftFiles shifts filesToshift by the amounts specified in uidRange
-func shiftFiles(filesToShift []string, uidRange *user.UidRange) error {
-	if uidRange.Shift != 0 && uidRange.Count != 0 {
-		for _, f := range filesToShift {
-			if err := os.Chown(f, int(uidRange.Shift), int(uidRange.Shift)); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
 // generateDeviceAllows generates a DeviceAllow= line for an app.
 // To make it work, the path needs to start with "/dev" but the device won't
 // exist inside the container. So for a given mount, if the volume is a device
@@ -392,7 +369,7 @@ func generateDeviceAllows(root string, appName types.ACName, mountPoints []types
 	if err := os.MkdirAll(rktVolumeLinksPath, 0600); err != nil {
 		return nil, err
 	}
-	if err := shiftFiles([]string{rktVolumeLinksPath}, uidRange); err != nil {
+	if err := user.ShiftFiles([]string{rktVolumeLinksPath}, uidRange); err != nil {
 		return nil, err
 	}
 
@@ -455,7 +432,7 @@ func appToSystemd(p *stage1commontypes.Pod, ra *schema.RuntimeApp, interactive b
 		return err
 	}
 
-	if err := writeEnvFile(p, env, appName, uidRange, '\n', envFilePath); err != nil {
+	if err := common.WriteEnvFile(env, uidRange, envFilePath); err != nil {
 		return errwrap.Wrap(errors.New("unable to write environment file for systemd"), err)
 	}
 
@@ -805,33 +782,6 @@ func writeShutdownService(p *stage1commontypes.Pod) error {
 
 	if _, err = io.Copy(file, unit.Serialize(opts)); err != nil {
 		return errwrap.Wrap(errors.New("failed to write unit file"), err)
-	}
-
-	return nil
-}
-
-// writeEnvFile creates an environment file for given app name, the minimum
-// required environment variables by the appc spec will be set to sensible
-// defaults here if they're not provided by env.
-func writeEnvFile(p *stage1commontypes.Pod, env types.Environment, appName types.ACName, uidRange *user.UidRange, separator byte, envFilePath string) error {
-	ef := bytes.Buffer{}
-
-	for dk, dv := range defaultEnv {
-		if _, exists := env.Get(dk); !exists {
-			fmt.Fprintf(&ef, "%s=%s%c", dk, dv, separator)
-		}
-	}
-
-	for _, e := range env {
-		fmt.Fprintf(&ef, "%s=%s%c", e.Name, e.Value, separator)
-	}
-
-	if err := ioutil.WriteFile(envFilePath, ef.Bytes(), 0644); err != nil {
-		return err
-	}
-
-	if err := shiftFiles([]string{envFilePath}, uidRange); err != nil {
-		return err
 	}
 
 	return nil

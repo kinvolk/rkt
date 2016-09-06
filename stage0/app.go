@@ -17,7 +17,6 @@
 package stage0
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -35,17 +34,6 @@ import (
 	"github.com/appc/spec/schema"
 	"github.com/appc/spec/schema/types"
 	"github.com/hashicorp/errwrap"
-)
-
-var (
-	// TODO refactor this, it's also in stage1/init/common/pod.go
-	defaultEnv = map[string]string{
-		"PATH":    "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-		"SHELL":   "/bin/sh",
-		"USER":    "root",
-		"LOGNAME": "root",
-		"HOME":    "/root",
-	}
 )
 
 // TODO(iaguis): add override options for Exec, Environment (à la patch-manifest)
@@ -160,7 +148,7 @@ func AddApp(cfg RunConfig, dir string, img *types.Hash) error {
 	env.Set("AC_APP_NAME", appName.String())
 	envFilePath := filepath.Join(common.Stage1RootfsPath(dir), "rkt", "env", appName.String())
 
-	if err := writeEnvFile(env, uidRange, envFilePath); err != nil {
+	if err := common.WriteEnvFile(env, uidRange, envFilePath); err != nil {
 		return err
 	}
 
@@ -171,47 +159,6 @@ func AddApp(cfg RunConfig, dir string, img *types.Hash) error {
 		return err
 	}
 
-	return nil
-}
-
-// TODO refactor this, it's also in stage1/init/common/pod.go
-// writeEnvFile creates an environment file for given app name, the minimum
-// required environment variables by the appc spec will be set to sensible
-// defaults here if they're not provided by env.
-func writeEnvFile(env types.Environment, uidRange *user.UidRange, envFilePath string) error {
-	ef := bytes.Buffer{}
-
-	for dk, dv := range defaultEnv {
-		if _, exists := env.Get(dk); !exists {
-			fmt.Fprintf(&ef, "%s=%s\n", dk, dv)
-		}
-	}
-
-	for _, e := range env {
-		fmt.Fprintf(&ef, "%s=%s\n", e.Name, e.Value)
-	}
-
-	if err := ioutil.WriteFile(envFilePath, ef.Bytes(), 0644); err != nil {
-		return err
-	}
-
-	if err := shiftFiles([]string{envFilePath}, uidRange); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// TODO refactor this, it's also in stage1/init/common/pod.go
-// shiftFiles shifts filesToshift by the amounts specified in uidRange
-func shiftFiles(filesToShift []string, uidRange *user.UidRange) error {
-	if uidRange.Shift != 0 && uidRange.Count != 0 {
-		for _, f := range filesToShift {
-			if err := os.Chown(f, int(uidRange.Shift), int(uidRange.Shift)); err != nil {
-				return err
-			}
-		}
-	}
 	return nil
 }
 
