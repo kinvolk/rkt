@@ -116,6 +116,7 @@ func runAppSandbox(cmd *cobra.Command, args []string) int {
 		Stage1Image:  *s1img,
 		UUID:         p.UUID,
 		Debug:        globalFlags.Debug,
+		Mutable:      true,
 	}
 
 	ovlOk := true
@@ -196,7 +197,6 @@ func runAppSandbox(cmd *cobra.Command, args []string) int {
 		InsecurePaths:        globalFlags.InsecureFlags.SkipPaths(),
 		InsecureSeccomp:      globalFlags.InsecureFlags.SkipSeccomp(),
 		UseOverlay:           useOverlay,
-		Mutable:              true,
 	}
 
 	_, manifest, err := p.PodManifest()

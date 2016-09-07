@@ -56,6 +56,19 @@ func AddApp(cfg RunConfig, dir string, img *types.Hash) error {
 
 	pm := p.Manifest
 
+	var mutable bool
+	ms, ok := pm.Annotations.Get("coreos.com/rkt/stage1/mutable")
+	if ok {
+		mutable, err = strconv.ParseBool(ms)
+		if err != nil {
+			return errwrap.Wrap(errors.New("error parsing mutable annotation"), err)
+		}
+	}
+
+	if !mutable {
+		return errors.New("immutable pod: cannot add application")
+	}
+
 	if pm.Apps.Get(*appName) != nil {
 		return fmt.Errorf("error: multiple apps with name %s", *appName)
 	}
@@ -211,6 +224,20 @@ func RmApp(dir string, uuid *types.UUID, usesOverlay bool, appName *types.ACName
 	}
 
 	pm := p.Manifest
+
+	var mutable bool
+	ms, ok := pm.Annotations.Get("coreos.com/rkt/stage1/mutable")
+	if ok {
+		mutable, err = strconv.ParseBool(ms)
+		if err != nil {
+			return errwrap.Wrap(errors.New("error parsing mutable annotation"), err)
+		}
+	}
+
+	if !mutable {
+		return errors.New("immutable pod: cannot remove application")
+	}
+
 	app := pm.Apps.Get(*appName)
 	if app == nil {
 		return fmt.Errorf("error: nonexistent app %q", *appName)

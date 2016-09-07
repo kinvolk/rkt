@@ -89,7 +89,6 @@ type RunConfig struct {
 	InsecurePaths        bool           // Do not restrict access to files in sysfs or procfs
 	InsecureSeccomp      bool           // Do not add seccomp restrictions
 	UseOverlay           bool           // run pod with overlay fs
-	Mutable              bool           // whether this pod is mutable
 }
 
 // CommonConfig defines the configuration shared by both Run and Prepare
@@ -103,6 +102,7 @@ type CommonConfig struct {
 	Debug        bool
 	MountLabel   string // selinux label to use for fs
 	ProcessLabel string // selinux label to use for process
+	Mutable      bool   // whether this pod is mutable
 }
 
 func init() {
@@ -327,6 +327,12 @@ func generatePodManifest(cfg PrepareConfig, dir string) ([]byte, error) {
 	// satisfied here, rather than waiting for stage1
 	pm.Volumes = cfg.Apps.Volumes
 	pm.Ports = cfg.Ports
+
+	// TODO(sur): add to stage1-implementors-guide and to the spec
+	pm.Annotations = append(pm.Annotations, types.Annotation{
+		Name:  "coreos.com/rkt/stage1/mutable",
+		Value: strconv.FormatBool(cfg.Mutable),
+	})
 
 	pmb, err := json.Marshal(pm)
 	if err != nil {

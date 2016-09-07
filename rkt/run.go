@@ -256,6 +256,7 @@ func runRun(cmd *cobra.Command, args []string) (exit int) {
 		Stage1Image:  *s1img,
 		UUID:         p.UUID,
 		Debug:        globalFlags.Debug,
+		Mutable:      false,
 	}
 
 	ovlOk := true
@@ -340,7 +341,6 @@ func runRun(cmd *cobra.Command, args []string) (exit int) {
 		InsecurePaths:        globalFlags.InsecureFlags.SkipPaths(),
 		InsecureSeccomp:      globalFlags.InsecureFlags.SkipSeccomp(),
 		UseOverlay:           useOverlay,
-		Mutable:              false,
 	}
 
 	_, manifest, err := p.PodManifest()
