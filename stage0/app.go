@@ -86,7 +86,7 @@ func AddApp(cfg RunConfig, dir string, img *types.Hash) error {
 				return errwrap.Wrap(errors.New("error rendering tree image"), err)
 			}
 		}
-		cfg.CommonConfig.RootHash = hash
+		cfg.RootHash = hash
 
 		if err := ioutil.WriteFile(common.AppTreeStoreIDPath(dir, *appName), []byte(treeStoreID), common.DefaultRegularFilePerm); err != nil {
 			return errwrap.Wrap(errors.New("error writing app treeStoreID"), err)
