@@ -13,6 +13,7 @@ _S1_SS_SUBDIRS_ := \
 	stop \
 	stop_kvm \
 	app-rm \
+	app-start \
 	units \
 	aci
 

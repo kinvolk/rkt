@@ -38,6 +38,17 @@ import (
 	"github.com/hashicorp/errwrap"
 )
 
+type StartConfig struct {
+	*CommonConfig
+	Dir                  string
+	UsesOverlay          bool
+	AppName              *types.ACName
+	PodPID               int
+	InsecureCapabilities bool // Do not restrict capabilities
+	InsecurePaths        bool // Do not restrict access to files in sysfs or procfs
+	InsecureSeccomp      bool // Do not add seccomp restrictions
+}
+
 // TODO(iaguis): add override options for Exec, Environment (à la patch-manifest)
 func AddApp(cfg RunConfig, dir string, img *types.Hash) error {
 	im, err := cfg.Store.GetImageManifest(img.String())
@@ -217,6 +228,7 @@ func updateFile(path string, contents []byte) error {
 	return nil
 }
 
+// TODO(iaguis): RmConfig?
 func RmApp(dir string, uuid *types.UUID, usesOverlay bool, appName *types.ACName, podPID int) error {
 	p, err := stage1types.LoadPod(dir, uuid)
 	if err != nil {
@@ -340,4 +352,104 @@ func removeAppFromPodManifest(pm *schema.PodManifest, appName *types.ACName) {
 			pm.Apps = append(pm.Apps[:i], pm.Apps[i+1:]...)
 		}
 	}
+}
+
+func StartApp(cfg StartConfig) error {
+	p, err := stage1types.LoadPod(cfg.Dir, cfg.UUID)
+	if err != nil {
+		return errwrap.Wrap(errors.New("error loading pod manifest"), err)
+	}
+
+	pm := p.Manifest
+
+	var mutable bool
+	ms, ok := pm.Annotations.Get("coreos.com/rkt/stage1/mutable")
+	if ok {
+		mutable, err = strconv.ParseBool(ms)
+		if err != nil {
+			return errwrap.Wrap(errors.New("error parsing mutable annotation"), err)
+		}
+	}
+
+	if !mutable {
+		return errors.New("immutable pod: cannot start application")
+	}
+
+	app := pm.Apps.Get(*cfg.AppName)
+	if app == nil {
+		return fmt.Errorf("error: nonexistent app %q", *cfg.AppName)
+	}
+
+	s1rootfs := common.Stage1RootfsPath(cfg.Dir)
+
+	previousDir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	debug("Pivoting to filesystem %s", cfg.Dir)
+	// TODO(iaguis): what are you doing?
+	if err := os.Chdir(cfg.Dir); err != nil {
+		log.FatalE("failed changing to dir", err)
+	}
+
+	startEp, err := getStage1Entrypoint(cfg.Dir, appStartEntrypoint)
+	if err != nil {
+		return fmt.Errorf("rkt app rm not implemented for pod's stage1: %v", err)
+	}
+	args := []string{filepath.Join(s1rootfs, startEp)}
+	debug("Execing %s", startEp)
+
+	enterEp, err := getStage1Entrypoint(cfg.Dir, enterEntrypoint)
+	if err != nil {
+		return errwrap.Wrap(errors.New("error determining 'enter' entrypoint"), err)
+	}
+
+	args = append(args, cfg.UUID.String())
+	args = append(args, cfg.AppName.String())
+	args = append(args, filepath.Join(s1rootfs, enterEp))
+	args = append(args, strconv.Itoa(cfg.PodPID))
+
+	s1v, err := getStage1InterfaceVersion(cfg.Dir)
+	if err != nil {
+		log.FatalE("error determining stage1 interface version", err)
+	}
+
+	if interfaceVersionSupportsInsecureOptions(s1v) {
+		if cfg.InsecureCapabilities {
+			args = append(args, "--disable-capabilities-restriction")
+		}
+		if cfg.InsecurePaths {
+			args = append(args, "--disable-paths")
+		}
+		if cfg.InsecureSeccomp {
+			args = append(args, "--disable-seccomp")
+		}
+	}
+
+	privateUsers, err := preparedWithPrivateUsers(cfg.Dir)
+	if err != nil {
+		log.FatalE("error reading user namespace information", err)
+	}
+
+	if privateUsers != "" {
+		args = append(args, fmt.Sprintf("--private-users=%s", privateUsers))
+	}
+
+	c := exec.Cmd{
+		Path:   args[0],
+		Args:   args,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	if err := c.Run(); err != nil {
+		return fmt.Errorf("error executing stage1's app rm: %v", err)
+	}
+
+	if err := os.Chdir(previousDir); err != nil {
+		log.FatalE("failed changing to dir", err)
+	}
+
+	return nil
 }

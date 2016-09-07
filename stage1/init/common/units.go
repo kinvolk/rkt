@@ -86,7 +86,7 @@ func MutableEnv(p *stage1commontypes.Pod) error {
 	return w.error()
 }
 
-func ImmutableEnv(p *stage1commontypes.Pod, interactive bool, flavor string, privateUsers string, insecureOptions Stage1InsecureOptions) error {
+func ImmutableEnv(p *stage1commontypes.Pod, interactive bool, privateUsers string, insecureOptions Stage1InsecureOptions) error {
 	w := newUnitWriter(p)
 
 	opts := []*unit.UnitOption{
@@ -144,15 +144,15 @@ func ImmutableEnv(p *stage1commontypes.Pod, interactive bool, flavor string, pri
 		return err
 	}
 
-	return appUnits(p, interactive, flavor, privateUsers, insecureOptions)
+	return AppUnits(p, interactive, privateUsers, insecureOptions)
 }
 
-// appUnits creates the appropriate systemd service unit files for
+// AppUnits creates the appropriate systemd service unit files for
 // all the constituent apps of the Pod.
-func appUnits(p *stage1commontypes.Pod, interactive bool, flavor string, privateUsers string, insecureOptions Stage1InsecureOptions) error {
+func AppUnits(p *stage1commontypes.Pod, interactive bool, privateUsers string, insecureOptions Stage1InsecureOptions) error {
 	for i := range p.Manifest.Apps {
 		ra := &p.Manifest.Apps[i]
-		if err := appUnit(p, ra, interactive, flavor, privateUsers, insecureOptions); err != nil {
+		if err := appUnit(p, ra, interactive, privateUsers, insecureOptions); err != nil {
 			return errwrap.Wrap(fmt.Errorf("failed to transform app %q into systemd service", ra.Name), err)
 		}
 	}
@@ -161,7 +161,7 @@ func appUnits(p *stage1commontypes.Pod, interactive bool, flavor string, private
 }
 
 // appToSystemd transforms the provided RuntimeApp+ImageManifest into systemd units.
-func appUnit(p *stage1commontypes.Pod, ra *schema.RuntimeApp, interactive bool, flavor string, privateUsers string, insecureOptions Stage1InsecureOptions) error {
+func appUnit(p *stage1commontypes.Pod, ra *schema.RuntimeApp, interactive bool, privateUsers string, insecureOptions Stage1InsecureOptions) error {
 	app := ra.App
 	appName := ra.Name
 	imgName := p.AppNameToImageName(appName)
