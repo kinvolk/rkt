@@ -293,6 +293,14 @@ func satisfiesPodFilter(pod v1alpha.Pod, filter v1alpha.PodFilter) bool {
 		}
 	}
 
+	// Filter according to the stage1 image
+	if len(filter.Stage1Images) > 0 {
+		s := set.NewString(filter.Stage1Images...)
+		if !s.Has(pod.Stage1Image) {
+			return false
+		}
+	}
+
 	return true
 }
 

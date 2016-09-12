@@ -361,6 +361,8 @@ type Pod struct {
 	// in nanoseconds since epoch.
 	// Zero if the pod is not moved to exited-garbage/garbage yet.
 	GcMarkedAt int64 `protobuf:"varint,11,opt,name=gc_marked_at,json=gcMarkedAt" json:"gc_marked_at,omitempty"`
+	// Stage1 images name.
+	Stage1Image string `protobuf:"bytes,12,opt,name=id" json:"id,omitempty"`
 }
 
 func (m *Pod) Reset()                    { *m = Pod{} }
@@ -421,6 +423,8 @@ type PodFilter struct {
 	// If not empty, the pods whose these cgroup belong to will be returned.
 	// i.e. the pod's cgroup is a prefix of the specified cgroup
 	PodSubCgroups []string `protobuf:"bytes,8,rep,name=pod_sub_cgroups,json=podSubCgroups" json:"pod_sub_cgroups,omitempty"`
+	// If not empty, the pods that have any of the stage1 image names will be returned.
+	Stage1Images []string `protobuf:"bytes,9,rep,name=ids" json:"ids,omitempty"`
 }
 
 func (m *PodFilter) Reset()                    { *m = PodFilter{} }
