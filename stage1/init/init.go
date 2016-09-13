@@ -320,7 +320,7 @@ func getArgsEnv(p *stage1commontypes.Pod, flavor string, canMachinedRegister boo
 	case "src":
 		args = append(args, filepath.Join(common.Stage1RootfsPath(p.Root), interpBin))
 		args = append(args, filepath.Join(common.Stage1RootfsPath(p.Root), nspawnBin))
-		args = append(args, "--boot") // Launch systemd in the pod
+		//		args = append(args, "--boot") // Launch systemd in the pod
 
 		if context := os.Getenv(common.EnvSELinuxContext); context != "" {
 			args = append(args, fmt.Sprintf("-Z%s", context))
@@ -369,7 +369,7 @@ func getArgsEnv(p *stage1commontypes.Pod, flavor string, canMachinedRegister boo
 		}
 
 		args = append(args, hostNspawnBin)
-		args = append(args, "--boot") // Launch systemd in the pod
+		//		args = append(args, "--boot") // Launch systemd in the pod
 		args = append(args, fmt.Sprintf("--register=true"))
 
 		if context := os.Getenv(common.EnvSELinuxContext); context != "" {
@@ -424,6 +424,9 @@ func getArgsEnv(p *stage1commontypes.Pod, flavor string, canMachinedRegister boo
 	// introduced by https://github.com/systemd/systemd/pull/3809.
 	env = append(env, "SYSTEMD_NSPAWN_USE_CGNS=no")
 
+	// XXX: CAREFUL!
+	env = append(env, "SYSTEMD_NSPAWN_SHARE_NS_PID=yes")
+
 	if len(privateUsers) > 0 {
 		args = append(args, "--private-users="+privateUsers)
 	}
@@ -433,14 +436,17 @@ func getArgsEnv(p *stage1commontypes.Pod, flavor string, canMachinedRegister boo
 		return nil, nil, errwrap.Wrap(errors.New("failed to generate nspawn args"), err)
 	}
 	args = append(args, nsargs...)
+	args = append(args, []string{"/bin/bash", "-c", "/prepare-app /opt/stage2/libvirt/rootfs && /enterexec /opt/stage2/libvirt/rootfs / /rkt/env/libvirt 0 0 -- /bin/bash"}...)
 
-	// Arguments to systemd
-	args = append(args, "--")
-	args = append(args, "--default-standard-output=tty") // redirect all service logs straight to tty
-	if !debug {
-		args = append(args, "--log-target=null") // silence systemd output inside pod
-		args = append(args, "--show-status=0")   // silence systemd initialization status output
-	}
+	/*
+		// Arguments to systemd
+		args = append(args, "--")
+		args = append(args, "--default-standard-output=tty") // redirect all service logs straight to tty
+		if !debug {
+			args = append(args, "--log-target=null") // silence systemd output inside pod
+			args = append(args, "--show-status=0")   // silence systemd initialization status output
+		}
+	*/
 
 	return args, env, nil
 }

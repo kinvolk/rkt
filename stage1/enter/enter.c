@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
 
 	pexit_if(fchdir(root_fd) < 0,
 		"Unable to chdir to pod root");
-	pexit_if(chroot(".") < 0,
+	pexit_if(chroot("../../../..") < 0,
 		"Unable to chroot");
 	pexit_if(close(root_fd) == -1,
 		"Unable to close root_fd");
