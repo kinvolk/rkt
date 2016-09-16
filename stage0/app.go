@@ -57,7 +57,7 @@ type StopConfig struct {
 }
 
 // TODO(iaguis): add override options for Exec, Environment (à la patch-manifest)
-func AddApp(cfg RunConfig, dir string, img *types.Hash) error {
+func AddApp(pcfg PrepareConfig, cfg RunConfig, dir string, img *types.Hash) error {
 	im, err := cfg.Store.GetImageManifest(img.String())
 	if err != nil {
 		return err
@@ -177,6 +177,11 @@ func AddApp(cfg RunConfig, dir string, img *types.Hash) error {
 			Labels: im.Labels,
 		},
 		// TODO(iaguis): default isolators
+	}
+
+	// there should be only one app in the config
+	if err := prepareIsolators(pcfg.Apps.Last(), ra.App); err != nil {
+		return err
 	}
 
 	env := ra.App.Environment
