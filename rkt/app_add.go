@@ -29,7 +29,7 @@ import (
 
 var (
 	cmdAppAdd = &cobra.Command{
-		Use:   "add UUID IMAGEID [--memory=LIMIT]...",
+		Use:   "add UUID IMAGEID ...",
 		Short: "Add an app to a pod",
 		Long:  `This allows addin an app that's present on the store to a running pod`,
 		Run:   runWrapper(runAppAdd),
@@ -38,7 +38,7 @@ var (
 
 func init() {
 	cmdApp.AddCommand(cmdAppAdd)
-	cmdAppAdd.Flags().Var((*appMemoryLimit)(&rktApps), "memory", "memory limit for the preceding image (example: '--memory=16Mi', '--memory=50M', '--memory=1G')")
+	addIsolatorFlags(cmdAppAdd)
 
 	// Disable interspersed flags to stop parsing after the first non flag
 	// argument. All the subsequent parsing will be done by parseApps.
