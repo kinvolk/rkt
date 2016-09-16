@@ -101,7 +101,7 @@ func runAppAdd(cmd *cobra.Command, args []string) (exit int) {
 		return 1
 	}
 
-	cfg := stage0.CommonConfig{
+	ccfg := stage0.CommonConfig{
 		Store:     s,
 		TreeStore: ts,
 		UUID:      p.UUID,
@@ -114,13 +114,13 @@ func runAppAdd(cmd *cobra.Command, args []string) (exit int) {
 		rktgid = -1
 	}
 
-	pcfg := stage0.RunConfig{
-		CommonConfig: &cfg,
+	rcfg := stage0.RunConfig{
+		CommonConfig: &ccfg,
 		UseOverlay:   p.UsesOverlay(),
 		RktGid:       rktgid,
 	}
 
-	err = stage0.AddApp(pcfg, p.Path(), img)
+	err = stage0.AddApp(rcfg, p.Path(), img)
 	if err != nil {
 		stderr.PrintE("error adding app to pod", err)
 		return 1
