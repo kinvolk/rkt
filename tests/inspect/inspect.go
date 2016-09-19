@@ -34,6 +34,7 @@ import (
 	"golang.org/x/sys/unix"
 
 	"github.com/appc/spec/pkg/device"
+	"github.com/coreos/go-systemd/daemon"
 	"github.com/coreos/rkt/common/cgroup"
 	"github.com/coreos/rkt/tests/testutils"
 	"github.com/syndtr/gocapability/capability"
@@ -82,6 +83,7 @@ var (
 		CheckMountNS       bool
 		PrintNoNewPrivs    bool
 		CheckMknod         string
+		Notify             bool
 	}{}
 )
 
@@ -126,6 +128,7 @@ func init() {
 	globalFlagset.BoolVar(&globalFlags.CheckMountNS, "check-mountns", false, "Check if app's mount ns is different than stage1's. Requires CAP_SYS_PTRACE")
 	globalFlagset.BoolVar(&globalFlags.PrintNoNewPrivs, "print-no-new-privs", false, "print the prctl PR_GET_NO_NEW_PRIVS value")
 	globalFlagset.StringVar(&globalFlags.CheckMknod, "check-mknod", "", "check whether mknod on restricted devices is allowed")
+	globalFlagset.BoolVar(&globalFlags.Notify, "notify", true, "Send \"READY=1\" notification")
 }
 
 func in(list []int, el int) bool {
@@ -396,6 +399,19 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Printf("cwd: %s\n", wd)
+	}
+
+	if globalFlags.Notify {
+		sent, err := daemon.SdNotify("READY=1")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Notification failed: %s", err)
+			os.Exit(1)
+		}
+		if !sent {
+			fmt.Fprintf(os.Stderr, "Notification not supported, did you set NOTIFY_SOCKET? %s", err)
+			os.Exit(1)
+		}
+		fmt.Println("Notification sent")
 	}
 
 	if globalFlags.Sleep >= 0 {
