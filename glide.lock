@@ -1,5 +1,5 @@
-hash: f9a3d5488f0ccf2c1d7e3ee1d725a3c6bf4f4b5128950b44df34c3eee657c2e6
-updated: 2016-08-30T12:00:39.148220845Z
+hash: d6b902c7fa075a0f34aa7824341a4e6b91300ddca2eff6bed6a6249b7ba669f0
+updated: 2016-09-19T17:14:05.62845436+02:00
 imports:
 - name: github.com/appc/docker2aci
   version: 15d68b33bfee95a448c4da37dbe876baa8fcb5b6
@@ -94,6 +94,7 @@ imports:
   version: 43e4800a6165b4e02bb2a36673c54b230d6f7b26
   subpackages:
   - activation
+  - daemon
   - dbus
   - sdjournal
   - unit
