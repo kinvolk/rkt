@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"syscall"
 
 	"github.com/coreos/rkt/common/cgroup"
 
@@ -120,6 +121,85 @@ func main() {
 		log.PrintE("continuing with per-app isolators disabled", err)
 	}
 
+	/* prepare mounts */
+	/* TODO(alban): use GenerateMounts, see stage1/init/common/pod.go:appToNspawnArgs */
+	mountSlave, err := ioutil.TempDir("", "rkt.propagate.")
+	if err != nil {
+		log.FatalE("error creating temporary propagation directory", err)
+		os.Exit(1)
+	}
+	defer os.Remove(mountSlave)
+
+	err = syscall.Mount(mountSlave, mountSlave, "bind", syscall.MS_BIND, "")
+	if err != nil {
+		log.FatalE("error mounting temporary directory", err)
+		os.Exit(1)
+	}
+	defer syscall.Unmount(mountSlave, 0)
+
+	err = syscall.Mount("", mountSlave, "none", syscall.MS_SLAVE, "")
+	if err != nil {
+		log.FatalE("error mounting temporary directory", err)
+		os.Exit(1)
+	}
+
+	mountTmp := filepath.Join(mountSlave, "mount")
+	if err := os.MkdirAll(mountTmp, 0700); err != nil {
+		log.FatalE("error creating temporary mount directory", err)
+		os.Exit(1)
+	}
+	defer os.Remove(mountTmp)
+
+	err = syscall.Mount("/home/alban/tmp", mountTmp, "bind", syscall.MS_BIND, "")
+	if err != nil {
+		log.FatalE("error mounting temporary directory", err)
+		os.Exit(1)
+	}
+	defer syscall.Unmount(mountTmp, 0)
+
+	readonly := true
+	if readonly {
+		err = syscall.Mount("", mountTmp, "bind", syscall.MS_REMOUNT|syscall.MS_RDONLY|syscall.MS_BIND, "")
+		if err != nil {
+			log.FatalE("error remounting temporary mount directory read-only", err)
+			os.Exit(1)
+		}
+	}
+
+	mountOutside := filepath.Join("/run/systemd/nspawn/propagate/", "rkt-"+p.UUID.String(), "rkt.mount")
+	mountInside := filepath.Join("/run/systemd/nspawn/incoming/", filepath.Base(mountOutside))
+	mountDst := "/opt/stage2/alpine-sh/rootfs/newmnt"
+	mountDstOutside := filepath.Join(p.Root, "stage1/rootfs", mountDst)
+	if err := os.MkdirAll(mountOutside, 0700); err != nil {
+		log.FatalE("error creating temporary mount directory", err)
+		os.Exit(1)
+	}
+	defer os.Remove(mountOutside)
+
+	if err := os.MkdirAll(mountDstOutside, 0700); err != nil {
+		log.FatalE("error creating destination directory", err)
+		os.Exit(1)
+	}
+
+	err = syscall.Mount(mountTmp, mountOutside, "", syscall.MS_MOVE, "")
+	if err != nil {
+		log.FatalE("error moving mount directory", err)
+		os.Exit(1)
+	}
+
+	args := enterCmd
+	args = append(args, "/bin/mount", "--move", mountInside, mountDst)
+
+	cmd := exec.Cmd{
+		Path: args[0],
+		Args: args,
+	}
+
+	if err := cmd.Run(); err != nil {
+		log.PrintE("error executing mount move", err)
+		os.Exit(1)
+	}
+
 	/* write service file */
 	binPath, err := stage1initcommon.FindBinPath(p, ra)
 	if err != nil {
@@ -143,11 +223,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	args := enterCmd
+	args = enterCmd
 	args = append(args, "/usr/bin/systemctl")
 	args = append(args, "daemon-reload")
 
-	cmd := exec.Cmd{
+	cmd = exec.Cmd{
 		Path: args[0],
 		Args: args,
 	}
