@@ -249,7 +249,7 @@ func IsControllerMounted(c string) (bool, error) {
 
 // CreateCgroups mounts the v1 cgroup controllers hierarchy in /sys/fs/cgroup
 // under root
-func CreateCgroups(m fs.Mounter, root string, enabledCgroups map[int][]string, mountContext string, createHybridDir bool) error {
+func CreateCgroups(m fs.Mounter, root string, enabledCgroups map[int][]string, mountContext string) error {
 	controllers := GetControllerDirs(enabledCgroups)
 
 	sys := filepath.Join(root, "/sys")
@@ -316,11 +316,9 @@ func CreateCgroups(m fs.Mounter, root string, enabledCgroups map[int][]string, m
 		return err
 	}
 
-	if createHybridDir {
-		unifiedPath := filepath.Join(root, "/sys/fs/cgroup/unified")
-		if err := os.MkdirAll(unifiedPath, 0700); err != nil {
-			return err
-		}
+	unifiedPath := filepath.Join(root, "/sys/fs/cgroup/unified")
+	if err := os.MkdirAll(unifiedPath, 0700); err != nil {
+		return err
 	}
 
 	// Bind-mount cgroup tmpfs filesystem read-only

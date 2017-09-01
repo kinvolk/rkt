@@ -27,12 +27,10 @@ import (
 )
 
 const (
-	// The following consts come from
+	// The following const comes from
 	// #define CGROUP2_SUPER_MAGIC  0x63677270
-	// #define TMPFS_MAGIC  0x01021994
 	// https://github.com/torvalds/linux/blob/v4.6/include/uapi/linux/magic.h#L58
 	Cgroup2fsMagicNumber = 0x63677270
-	TmpfsMagicNumber     = 0x01021994
 )
 
 // IsIsolatorSupported returns whether an isolator is supported in the kernel
@@ -57,44 +55,14 @@ func IsIsolatorSupported(isolator string) (bool, error) {
 	return v1.IsControllerMounted(isolator)
 }
 
-func isDirFs(dir string, magicNumber int64) (bool, error) {
-	var statfs syscall.Statfs_t
-	if err := syscall.Statfs(dir, &statfs); err != nil {
-		return false, err
-	}
-
-	return statfs.Type == magicNumber, nil
-}
-
-func isDirCgroupV2(dir string) (bool, error) {
-	return isDirFs(dir, Cgroup2fsMagicNumber)
-}
-
-func isDirCgroupV1(dir string) (bool, error) {
-	return isDirFs(dir, TmpfsMagicNumber)
-}
-
 // IsCgroupUnified checks if cgroup mounted at /sys/fs/cgroup is
 // the new unified version (cgroup v2)
 func IsCgroupUnified(root string) (bool, error) {
 	cgroupFsPath := filepath.Join(root, "/sys/fs/cgroup")
-	return isDirCgroupV2(cgroupFsPath)
-}
-
-// IsCgroupHybrid checks if the cgroup mounted at /sys/fs/cgroup is a v1-v2
-// hybrid, that is, it is a cgroup v1 and has a cgroup v2 hierarchy in the
-// "unified" subdirectory
-func IsCgroupHybrid(root string) (bool, error) {
-	cgroupFsPath := filepath.Join(root, "/sys/fs/cgroup")
-	unifiedPath := filepath.Join(cgroupFsPath, "unified")
-	isV1, err := isDirCgroupV1(cgroupFsPath)
-	if err != nil {
-		return false, err
-	}
-	hasUnified, err := isDirCgroupV2(unifiedPath)
-	if err != nil {
+	var statfs syscall.Statfs_t
+	if err := syscall.Statfs(cgroupFsPath, &statfs); err != nil {
 		return false, err
 	}
 
-	return isV1 && hasUnified, nil
+	return statfs.Type == Cgroup2fsMagicNumber, nil
 }
