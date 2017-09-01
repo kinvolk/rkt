@@ -715,7 +715,12 @@ func stage1(rp *stage1commontypes.RuntimePod) int {
 		}
 		diag.Printf("serviceNames %q", serviceNames)
 
-		if err := mountContainerV1Cgroups(mnt, p, enabledCgroups, subcgroup, serviceNames); err != nil {
+		isHostHybrid, err := cgroup.IsCgroupHybrid("/")
+		if err != nil {
+			log.FatalE("error checking if cgroup hierarchy is hybrid", err)
+		}
+
+		if err := mountContainerV1Cgroups(mnt, p, enabledCgroups, subcgroup, serviceNames, isHostHybrid); err != nil {
 			log.FatalE("couldn't mount the container v1 cgroups", err)
 		}
 
@@ -770,7 +775,7 @@ func mountHostV1Cgroups(m fs.Mounter, enabledCgroups map[int][]string) error {
 	systemdControllerPath := "/sys/fs/cgroup/systemd"
 	if !areHostV1CgroupsMounted(enabledCgroups) {
 		mountContext := os.Getenv(common.EnvSELinuxMountContext)
-		if err := v1.CreateCgroups(m, "/", enabledCgroups, mountContext); err != nil {
+		if err := v1.CreateCgroups(m, "/", enabledCgroups, mountContext, false); err != nil {
 			return errwrap.Wrap(errors.New("error creating host cgroups"), err)
 		}
 	}
@@ -794,10 +799,10 @@ func mountHostV1Cgroups(m fs.Mounter, enabledCgroups map[int][]string) error {
 // mountContainerV1Cgroups mounts the cgroup controllers hierarchy in the container's
 // namespace read-only, leaving the needed knobs in the subcgroup for each-app
 // read-write so systemd inside stage1 can apply isolators to them
-func mountContainerV1Cgroups(m fs.Mounter, p *stage1commontypes.Pod, enabledCgroups map[int][]string, subcgroup string, serviceNames []string) error {
+func mountContainerV1Cgroups(m fs.Mounter, p *stage1commontypes.Pod, enabledCgroups map[int][]string, subcgroup string, serviceNames []string, isHostHybrid bool) error {
 	mountContext := os.Getenv(common.EnvSELinuxMountContext)
 	stage1Root := common.Stage1RootfsPath(p.Root)
-	if err := v1.CreateCgroups(m, stage1Root, enabledCgroups, mountContext); err != nil {
+	if err := v1.CreateCgroups(m, stage1Root, enabledCgroups, mountContext, isHostHybrid); err != nil {
 		return errwrap.Wrap(errors.New("error creating container cgroups"), err)
 	}
 
