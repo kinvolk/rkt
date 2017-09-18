@@ -37,6 +37,16 @@ func NewPodFromInternalPod(p *pkgPod.Pod) (*v1.Pod, error) {
 		pod.StartedAt = &startedAt
 	}
 
+	creationTime, err := p.CreationTime()
+	if err != nil {
+		return nil, err
+	}
+
+	if !creationTime.IsZero() {
+		createdAt := creationTime.Unix()
+		pod.CreatedAt = &createdAt
+	}
+
 	if !p.PodManifestAvailable() {
 		return pod, nil
 	}
