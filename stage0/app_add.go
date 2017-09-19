@@ -62,7 +62,7 @@ func AddApp(cfg AddConfig) error {
 			return err
 		}
 	} else {
-		appName, err = imageNameToAppName(am.Name)
+		appName, err = common.ImageNameToAppName(am.Name)
 		if err != nil {
 			return err
 		}
