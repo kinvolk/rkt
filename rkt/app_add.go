@@ -17,7 +17,6 @@ package main
 import (
 	"fmt"
 
-	"github.com/appc/spec/schema/types"
 	"github.com/rkt/rkt/common"
 	pkgPod "github.com/rkt/rkt/pkg/pod"
 	"github.com/rkt/rkt/rkt/image"
@@ -111,15 +110,6 @@ func runAppAdd(cmd *cobra.Command, args []string) (exit int) {
 		return 254
 	}
 	rktApps.Last().ImageID = *img
-
-	if rktApps.Last().Name == "" {
-		appName, err := common.ImageNameToAppName(types.ACIdentifier(args[1]))
-		if err != nil {
-			stderr.Printf("error converting image name to app name: %v", err)
-			return 254
-		}
-		rktApps.Last().Name = appName.String()
-	}
 
 	podPID, err := p.ContainerPid1()
 	if err != nil {

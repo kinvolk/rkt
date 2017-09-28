@@ -66,6 +66,7 @@ func AddApp(cfg AddConfig) error {
 		if err != nil {
 			return err
 		}
+		app.Name = appName.String()
 	}
 
 	pod, err := pkgPod.PodFromUUIDString(cfg.DataDir, cfg.UUID.String())
