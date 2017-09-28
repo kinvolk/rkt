@@ -19,7 +19,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/url"
+	"os"
+	"os/exec"
+	"strings"
 	"time"
 
 	rktflag "github.com/rkt/rkt/rkt/flag"
@@ -148,7 +152,35 @@ func (f *nameFetcher) fetchImageFromSingleEndpoint(app *discovery.App, aciURL st
 	return key, nil
 }
 
+func (f *nameFetcher) fetchCasync(aciURL string) (readSeekCloser, error) {
+	log.Printf("fetchCasync: %s\n", aciURL)
+	tmpDir, err := ioutil.TempDir("/var/lib/rkt/tmp", "casync-tmp-")
+	if err != nil {
+		return nil, err
+	}
+	casyncCmd := fmt.Sprintf("casync extract --extra-store=/var/lib/rkt/casync-store %q %q", aciURL, tmpDir)
+	cmd := exec.Command("sh", "-c", casyncCmd)
+	stdoutStderr, err := cmd.CombinedOutput()
+	log.Print(stdoutStderr)
+	if err != nil {
+		return nil, err
+	}
+	tarCmd := fmt.Sprintf("cd %s && tar cf /var/lib/rkt/tmp/image.aci manifest rootfs", tmpDir)
+	stdoutStderr, err = exec.Command("sh", "-c", tarCmd).CombinedOutput()
+	log.Print(stdoutStderr)
+	if err != nil {
+		return nil, err
+	}
+
+	return os.Open("/var/lib/rkt/tmp/image.aci")
+}
+
 func (f *nameFetcher) fetch(app *discovery.App, aciURL string, a *asc, etag string) (readSeekCloser, *cacheData, error) {
+	if strings.Contains(aciURL, ".caidx") {
+		r, err := f.fetchCasync(aciURL)
+		return r, nil, err
+	}
+
 	if f.InsecureFlags.SkipTLSCheck() && f.Ks != nil {
 		log.Print("warning: TLS verification has been disabled")
 	}
