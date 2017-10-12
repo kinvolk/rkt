@@ -94,6 +94,8 @@ $(call generate-stamp-rule,$(UFS_ROOTFS_STAMP),$(UFS_SYSTEMD_INSTALL_STAMP),$(S1
 	cp -af "$(UFS_ROOTFSDIR)/." "$(S1_RF_ACIROOTFSDIR)"; \
 	$(call vb,v2,LN SF,src,$(call vsp,$(S1_RF_ACIROOTFSDIR)/flavor)) \
 	ln -sf 'src' "$(S1_RF_ACIROOTFSDIR)/flavor"; \
+	ln -sT 'usr/lib64' "$(S1_RF_ACIROOTFSDIR)/lib64" || true; \
+	ln -sT 'usr/lib' "$(S1_RF_ACIROOTFSDIR)/lib" || true; \
 	$(call vb,v2,GEN,$(call vsp,$(S1_RF_ACIROOTFSDIR)/systemd-version)) \
 	echo "$(RKT_STAGE1_SYSTEMD_VER)" >"$(S1_RF_ACIROOTFSDIR)/systemd-version")
 
