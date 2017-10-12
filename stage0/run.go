@@ -91,7 +91,6 @@ type RunConfig struct {
 	InsecureSeccomp      bool           // Do not add seccomp restrictions
 	UseOverlay           bool           // run pod with overlay fs
 	HostsEntries         HostsEntries   // The entries in /etc/hosts
-	IPCMode              string         // whether to stay in the host IPC namespace
 }
 
 // CommonConfig defines the configuration shared by both Run and Prepare
@@ -664,14 +663,6 @@ func Run(cfg RunConfig, dir string, dataDir string) {
 		}
 
 		args = append(args, "--mutable")
-	}
-
-	if cfg.IPCMode != "" {
-		if interfaceVersionSupportsIPCMode(s1v) {
-			args = append(args, "--ipc="+cfg.IPCMode)
-		} else {
-			log.Printf("warning: --ipc option is not supported by stage1")
-		}
 	}
 
 	args = append(args, cfg.UUID.String())
