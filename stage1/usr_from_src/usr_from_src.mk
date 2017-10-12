@@ -100,7 +100,7 @@ $(call generate-stamp-rule,$(UFS_ROOTFS_STAMP),$(UFS_SYSTEMD_INSTALL_STAMP),$(S1
 # this installs systemd into temporary rootfs
 $(call generate-stamp-rule,$(UFS_SYSTEMD_INSTALL_STAMP),$(UFS_SYSTEMD_BUILD_STAMP),$(UFS_ROOTFSDIR), \
 	$(call vb,v2,INSTALL,systemd) \
-	DESTDIR="$(abspath $(UFS_ROOTFSDIR))" $$(MAKE) -C "$(UFS_SYSTEMD_BUILDDIR)" V=0 install-strip $(call vl2,>/dev/null))
+	DESTDIR="$(abspath $(UFS_ROOTFSDIR))" ninja -C "$(UFS_SYSTEMD_BUILDDIR)" install $(call vl2,>/dev/null))
 
 # This filelist can be generated only after the installation of
 # systemd to temporary rootfs was performed
@@ -122,52 +122,53 @@ $(call generate-clean-mk-from-filelist, \
 
 # this builds systemd
 $(call generate-stamp-rule,$(UFS_SYSTEMD_BUILD_STAMP),$(UFS_SYSTEMD_CLONE_AND_PATCH_STAMP),$(UFS_SYSTEMD_BUILDDIR), \
-	pushd "$(UFS_SYSTEMD_BUILDDIR)" $(call vl3,>/dev/null); \
-	$(call vb,v2,CONFIGURE,systemd) \
-	"$(abspath $(UFS_SYSTEMD_SRCDIR))/configure" \
-		$(call vl3,--quiet) \
-		--enable-seccomp \
-		--enable-tmpfiles \
-		--disable-dbus \
-		--disable-kmod \
-		--disable-blkid \
-		--disable-selinux \
-		--disable-pam \
-		--disable-acl \
-		--disable-smack \
-		--disable-gcrypt \
-		--disable-elfutils \
-		--disable-libcryptsetup \
-		--disable-qrencode \
-		--disable-microhttpd \
-		--disable-gnutls \
-		--disable-binfmt \
-		--disable-vconsole \
-		--disable-quotacheck \
-		--disable-randomseed \
-		--disable-backlight \
-		--disable-rfkill \
-		--disable-logind \
-		--disable-machined \
-		--disable-timedated \
-		--disable-timesyncd \
-		--disable-localed \
-		--disable-coredump \
-		--disable-polkit \
-		--disable-resolved \
-		--disable-networkd \
-		--disable-efi \
-		--disable-myhostname \
-		--disable-manpages \
-		--disable-tests \
-		--disable-blkid \
-		--disable-hibernate \
-		--disable-hwdb \
-		--disable-importd \
-		--disable-firstboot; \
+	pushd "$(UFS_SYSTEMD_SRCDIR)" $(call vl3,>/dev/null); \
+	$(call vb,v2,MESON,systemd) \
+	meson \
+		--strip \
+		-D seccomp=true \
+		-D tmpfiles=true \
+		-D dbus=false \
+		-D kmod=false \
+		-D blkid=false \
+		-D selinux=false \
+		-D pam=false \
+		-D acl=false \
+		-D smack=false \
+		-D gcrypt=false \
+		-D elfutils=false \
+		-D libcryptsetup=false \
+		-D qrencode=false \
+		-D microhttpd=false \
+		-D gnutls=false \
+		-D binfmt=false \
+		-D vconsole=false \
+		-D quotacheck=false \
+		-D randomseed=false \
+		-D backlight=false \
+		-D rfkill=false \
+		-D logind=false \
+		-D machined=false \
+		-D timedated=false \
+		-D timesyncd=false \
+		-D localed=false \
+		-D coredump=false \
+		-D polkit=false \
+		-D resolved=false \
+		-D networkd=false \
+		-D efi=false \
+		-D myhostname=false \
+		-D manpages=false \
+		-D tests=true \
+		-D blkid=false \
+		-D hibernate=false \
+		-D hwdb=false \
+		-D importd=false \
+		-D firstboot=false \
+		"$(UFS_SYSTEMD_BUILDDIR)"; \
 	popd $(call vl3,>/dev/null); \
-	$(call vb,v2,BUILD EXT,systemd) \
-	$$(MAKE) -C "$(UFS_SYSTEMD_BUILDDIR)" all V=0 $(call vl2,>/dev/null))
+	$(call vb,v2,NINJA EXT,systemd) \
+	ninja -C "$(UFS_SYSTEMD_BUILDDIR)")
 
 # Generate a clean file for a build directory. This can be done only
 # after building systemd was finished.
@@ -205,16 +206,7 @@ $(UFS_SYSTEMD_CONFIGURE):
 			$(call vb,v2,PATCH,$${p#$(MK_TOPLEVEL_ABS_SRCDIR)/}) \
 			patch $(call vl3,--silent )--directory="$(UFS_SYSTEMD_SRCDIR)" --strip=1 --forward <"$${p}"; \
 		done; \
-	fi; \
-	pushd "$(UFS_SYSTEMD_SRCDIR)" $(call vl3,>/dev/null); \
-	$(call vb,v1,BUILD EXT,systemd) \
-	$(call vb,v2,AUTOGEN,systemd) \
-	$(call v3,./autogen.sh) \
-	$(call vl3, \
-		if ! ./autogen.sh 2>$(UFS_AG_OUT) >/dev/null; then \
-			cat $(UFS_AG_OUT) >&2; \
-		fi); \
-	popd $(call vl3,>/dev/null)
+	fi
 
 # Generate the clean file for systemd's srcdir. This can be done only
 # after it was cloned, patched and configure script was generated.
