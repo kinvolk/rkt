@@ -772,6 +772,7 @@ func (uw *UnitWriter) AppSocketUnit(appName types.ACName, binPath string, stream
 		unit.NewUnitOption("Unit", "RefuseManualStart", "yes"),
 		unit.NewUnitOption("Unit", "RefuseManualStop", "yes"),
 		unit.NewUnitOption("Unit", "BindsTo", fmt.Sprintf("%s.service", appName)),
+		unit.NewUnitOption("Unit", "Before", fmt.Sprintf("iomux@%s.service", appName)),
 		unit.NewUnitOption("Socket", "RemoveOnStop", "yes"),
 		unit.NewUnitOption("Socket", "Service", fmt.Sprintf("%s.service", appName)),
 		unit.NewUnitOption("Socket", "FileDescriptorName", streamName),
