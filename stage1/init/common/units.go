@@ -200,7 +200,7 @@ func ImmutableEnv(p *stage1commontypes.Pod) error {
 //  3. if any of stdin/stdout/stderr is in TTY or streaming mode:
 //     3a. the env file for iottymux is written to `/rkt/iottymux/<appname>/env` with the above content
 //     3b. for TTY mode, a `TTYPath` property and an `After=ttymux@<appname>.service` dependency are added
-//     3c. for streaming mode, a `Before=iomux@<appname>.service` dependency is added
+//     3c. for streaming mode, an `After=iomux@<appname>.service` dependency is added
 //
 // For complete details, see dev-docs at Documentation/devel/log-attach-design.md
 func (uw *UnitWriter) SetupAppIO(p *stage1commontypes.Pod, ra *schema.RuntimeApp, binPath string, opts ...*unit.UnitOption) []*unit.UnitOption {
@@ -321,9 +321,9 @@ func (uw *UnitWriter) SetupAppIO(p *stage1commontypes.Pod, ra *schema.RuntimeApp
 		}
 
 		if needsIOMux {
-			// streaming mode brings in a `iomux@.service` before-dependency
+			// streaming mode brings in a `iomux@.service` after-dependency
 			opts = append(opts, unit.NewUnitOption("Unit", "Requires", fmt.Sprintf("iomux@%s.service", ra.Name)))
-			opts = append(opts, unit.NewUnitOption("Unit", "Before", fmt.Sprintf("iomux@%s.service", ra.Name)))
+			opts = append(opts, unit.NewUnitOption("Unit", "After", fmt.Sprintf("iomux@%s.service", ra.Name)))
 			logMode, ok := p.Manifest.Annotations.Get("coreos.com/rkt/experiment/logmode")
 			if ok {
 				file.WriteString(fmt.Sprintf("STAGE1_LOGMODE=%s\n", logMode))
