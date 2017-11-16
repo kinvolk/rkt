@@ -20,6 +20,15 @@
         "exec": [
             "/inspect"
         ],
+        "eventHandlers": [
+            {
+                "name": "pre-start",
+                "exec": [
+                    "/inspect",
+                    "--print-user"
+                ]
+            }
+        ],
         "user": "0",
         "group": "0",
         "workingDirectory": "/",

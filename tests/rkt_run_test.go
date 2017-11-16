@@ -61,3 +61,16 @@ func TestRunConflictingFlags(t *testing.T) {
 		runRktAndCheckOutput(t, cmd, runConflictingFlagsMsg, true)
 	}
 }
+
+// TestPreStart tests that pre-start events are run, and they run as root even
+// when the app itself runs as an unprivileged user.
+func TestPreStart(t *testing.T) {
+	ctx := testutils.NewRktRunCtx()
+	defer ctx.Cleanup()
+
+	imagePath := getInspectImagePath()
+
+	rktCmd := fmt.Sprintf("%s --insecure-options=image run --mds-register=false %s --user=1000 ", ctx.Cmd(), imagePath)
+	expectedLine := "User: uid=0 euid=0 gid=0 egid=0"
+	runRktAndCheckOutput(t, rktCmd, expectedLine, false)
+}
