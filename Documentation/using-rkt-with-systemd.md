@@ -85,7 +85,7 @@ Sometimes, defining dependencies between containers makes sense.
 An example use case of this is a container running a server, and another container running a client.
 We want the server to start before the client tries to connect.
 
-![sd_notify-background](sd_notify-background.svg)
+![sd_notify-background](sd_notify-background.svg =250x250)
 
 This can be accomplished by using systemd services and dependencies.
 However, for this to work in rkt containers, we need special support.
