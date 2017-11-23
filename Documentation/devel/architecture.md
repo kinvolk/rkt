@@ -206,12 +206,12 @@ Depending on how rkt is executed, certain external resource limits will be appli
 
 If rkt is executed within a systemd service, the container will inherit the cgroup resource limits applied to the service itself and any ulimit-like limits.
 
-![rkt-process-model-with-systemd](rkt-process-model-with-systemd.png)
+![rkt-process-model-with-systemd](rkt-process-model-with-systemd.svg)
 
 If rkt is executed, say, from a terminal, the container will inherit ulimit-like limits, but not cgroup resource limits.
 The reason for this is that systemd will move the container to a new `machine` slice.
 
-![rkt-process-model](rkt-process-model.png)
+![rkt-process-model](rkt-process-model.svg)
 
 ### fly flavor
 
