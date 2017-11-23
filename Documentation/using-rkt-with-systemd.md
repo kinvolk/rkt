@@ -85,7 +85,7 @@ Sometimes, defining dependencies between containers makes sense.
 An example use case of this is a container running a server, and another container running a client.
 We want the server to start before the client tries to connect.
 
-![sd_notify-background](sd_notify-background.png)
+![sd_notify-background](sd_notify-background.svg)
 
 This can be accomplished by using systemd services and dependencies.
 However, for this to work in rkt containers, we need special support.
@@ -127,7 +127,7 @@ For more information check [systemd services unit][systemd-unit] documentation.
 
 This is how the sd_notify signal is propagated to the host system:
 
-![sd_notify-propagation](sd_notify-propagation.png)
+![sd_notify-propagation](sd_notify-propagation.svg)
 
 #### Using the systemd notification mechanism in an app
 
