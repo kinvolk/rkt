@@ -18,7 +18,7 @@ package main
 
 import (
 	"fmt"
-	"os"
+	//"os"
 	"testing"
 
 	"github.com/rkt/rkt/tests/testutils"
@@ -72,7 +72,8 @@ func TestNoNewPrivileges(t *testing.T) {
 			}
 
 			image := patchTestACI("rkt-no-new-privs.aci", ps...)
-			defer os.Remove(image)
+			//defer os.Remove(image)
+			fmt.Println("IMAGE:", image)
 
 			rktParams := fmt.Sprintf(
 				"%s --exec=/inspect -- -print-no-new-privs",
