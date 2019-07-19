@@ -525,6 +525,8 @@ func getArgsEnv(p *stage1commontypes.Pod, flavor string, canMachinedRegister boo
 	if !debug {
 		args = append(args, "--log-target=null") // silence systemd output inside pod
 		args = append(args, "--show-status=0")   // silence systemd initialization status output
+	} else {
+		args = append(args, "--log-level=debug")
 	}
 
 	return args, env, nil
