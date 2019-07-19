@@ -154,13 +154,15 @@ func cleanupV1Cgroups() error {
 		}
 		return errwrap.Wrap(errors.New("error reading subcgroup file"), err)
 	}
-	subcgroup := string(b)
+	// remove "payload" from subcgroup
+	subcgroup := filepath.Dir(string(b))
 
 	// if we're trying to clean up our own cgroup it means we're running in the
 	// same unit file as the rkt pod. We don't have to do anything, systemd
 	// will do the cleanup for us
 	ourCgroupPath, err := v1.GetOwnCgroupPath("name=systemd")
 	if err == nil {
+		diag.Printf("ourCgroupPath: %v", ourCgroupPath)
 		if strings.HasPrefix(ourCgroupPath, "/"+subcgroup) {
 			return nil
 		}
@@ -176,8 +178,10 @@ func cleanupV1Cgroups() error {
 		return err
 	}
 	var cgroupDirs []string
+	diag.Printf("ns: %v", ns)
 	for _, c := range ns {
 		scPath := filepath.Join(cgroupFsPath, c, subcgroup)
+		diag.Printf("scPath: %v", scPath)
 		walkCgroupDirs := func(path string, info os.FileInfo, err error) error {
 			// if the subcgroup is already removed, we're fine
 			if os.IsNotExist(err) {
@@ -189,6 +193,7 @@ func cleanupV1Cgroups() error {
 			mode := info.Mode()
 			if mode.IsDir() {
 				cgroupDirs = append(cgroupDirs, path)
+				cgroupDirs = append(cgroupDirs, filepath.Join(path, "payload"))
 			}
 			return nil
 		}
